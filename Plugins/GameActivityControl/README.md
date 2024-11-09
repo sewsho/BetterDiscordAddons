@@ -2,7 +2,7 @@
 
 # Game Activity Control
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
 
 Selectively control which games show up in your Discord status.
 
