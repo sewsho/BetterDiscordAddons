@@ -6,7 +6,7 @@
 
 Selectively control which games show up in your Discord status.
 
-![Plugin Preview](https://i.imgur.com/sAOGIzr.png)
+![Plugin Preview](https://imgur.com/a/ad5ZDo8)
 
 ---
 
