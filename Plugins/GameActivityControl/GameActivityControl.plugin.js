@@ -2,18 +2,30 @@
  * @name GameActivityControl
  * @author Sewsho
  * @description Selectively control which games show up in your Discord activity status
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 module.exports = class GameActivityControl {
   constructor() {
-    // Load or create game settings
+    /**
+     * Initialize plugin state
+     * gameSettings: Stores game visibility preferences {gameName: boolean}
+     * initialized: Tracks if the plugin has completed initial setup
+     * checkInterval: Reference to the initialization retry interval
+     * gameModule: Reference to Discord's internal game detection module
+     * unsubscribe: Cleanup function for event subscriptions
+     */
     this.gameSettings = BdApi.Data.load("GameActivityControl", "games") || {};
     this.initialized = false;
     this.checkInterval = null;
     this.gameModule = null;
+    this.unsubscribe = null;
   }
 
+  /**
+   * Starts the plugin and sets up game activity monitoring
+   * Attempts to initialize and will retry if initial setup fails
+   */
   start() {
     // Initialize plugin and retry if needed
     try {
@@ -25,18 +37,18 @@ module.exports = class GameActivityControl {
           this.initializeGameModule();
         }
       }, 100);
-
-      setTimeout(() => {
-        if (this.checkInterval) {
-          clearInterval(this.checkInterval);
-          this.checkInterval = null;
-        }
-      }, 5000);
     } catch (error) {
       BdApi.showToast("GameActivityControl: Failed to start - " + error.message, { type: "error" });
     }
   }
 
+  /**
+   * Performs complete cleanup of plugin resources
+   * - Removes custom styles
+   * - Unpatches all modifications
+   * - Clears intervals and event subscriptions
+   * - Resets plugin state
+   */
   stop() {
     // Clean up plugin resources
     BdApi.DOM.removeStyle("GameActivityControl");
@@ -47,50 +59,88 @@ module.exports = class GameActivityControl {
     }
     this.initialized = false;
     this.gameModule = null;
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
   }
 
+  /**
+   * Sets up game detection and monitoring
+   * - Locates and patches Discord's game detection module
+   * - Sets up activity monitoring
+   * - Subscribes to game detection events
+   * @throws {Error} When required Discord modules cannot be found
+   */
   initializeGameModule() {
-    // Set up game detection and monitoring
-    const gameModule = BdApi.Webpack.getModule((m) => m?.getName?.() === "GameStore");
-    if (!gameModule) return;
+    try {
+      const gameModule = BdApi.Webpack.getModule((m) => m?.getName?.() === "GameStore");
+      if (!gameModule) {
+        throw new Error("Could not find GameStore module");
+      }
 
-    this.gameModule = gameModule;
-    this.patchGameModule();
+      this.gameModule = gameModule;
+      this.patchGameModule();
 
-    const ActivityStore = BdApi.Webpack.getModule(
-      BdApi.Webpack.Filters.byProps("getActivities", "getLocalPresence")
-    );
-    if (ActivityStore) {
-      const DispatchModule = BdApi.Webpack.getModule(
-        BdApi.Webpack.Filters.byProps("dispatch", "subscribe")
+      const ActivityStore = BdApi.Webpack.getModule(
+        BdApi.Webpack.Filters.byProps("getActivities", "getLocalPresence")
       );
-      if (DispatchModule) {
-        if (DispatchModule.subscribe) {
-          DispatchModule.subscribe("GAME_DETECTION_CHANGE", () => {
-            const currentActivities = ActivityStore.getActivities();
-            currentActivities.forEach((activity) => {
-              const name = activity?.name || activity?.applicationName;
-              if (name && !(name in this.gameSettings)) {
-                this.gameSettings[name] = true;
-                this.saveSettings();
-              }
+      if (ActivityStore) {
+        const DispatchModule = BdApi.Webpack.getModule(
+          BdApi.Webpack.Filters.byProps("dispatch", "subscribe")
+        );
+        if (DispatchModule) {
+          if (DispatchModule.subscribe) {
+            this.unsubscribe = DispatchModule.subscribe("GAME_DETECTION_CHANGE", () => {
+              const currentActivities = ActivityStore.getActivities();
+              currentActivities.forEach((activity) => {
+                const name = activity?.name || activity?.applicationName;
+                if (name && !(name in this.gameSettings)) {
+                  this.gameSettings[name] = true;
+                  this.saveSettings();
+                }
+              });
             });
+          }
+
+          DispatchModule.dispatch({
+            type: "GAME_DETECTION_CHANGE",
           });
         }
-
-        DispatchModule.dispatch({
-          type: "GAME_DETECTION_CHANGE",
-        });
       }
-    }
 
-    this.initialized = true;
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
+      this.initialized = true;
+      if (this.checkInterval) {
+        clearInterval(this.checkInterval);
+        this.checkInterval = null;
+      }
+    } catch (error) {
+      console.error("GameActivityControl: Failed to initialize -", error);
+      BdApi.showToast("Failed to initialize game detection. Retrying...", { type: "error" });
     }
   }
 
+  /**
+   * Filters activities based on user preferences and updates settings for new games
+   * @param {Object} activity Discord activity object
+   * @returns {boolean} Whether the activity should be shown
+   */
+  filterActivity(activity) {
+    const name = activity?.name || activity?.applicationName;
+    if (!name) return true;
+
+    if (!(name in this.gameSettings)) {
+      this.gameSettings[name] = true;
+      this.saveSettings();
+    }
+    return this.gameSettings[name];
+  }
+
+  /**
+   * Patches Discord's internal methods to filter game activities
+   * - Modifies getGame to filter individual games
+   * - Patches presence and activity methods to respect user preferences
+   */
   patchGameModule() {
     // Patch Discord methods to filter game activity
     BdApi.Patcher.after("GameActivityControl", this.gameModule, "getGame", (_, args, game) => {
@@ -142,18 +192,128 @@ module.exports = class GameActivityControl {
         "getActivities",
         (_, args, activities) => {
           if (!Array.isArray(activities)) return activities;
-          return activities.filter((activity) => {
-            const name = activity?.name || activity?.applicationName;
-            if (!name) return true;
-            if (!(name in this.gameSettings)) {
-              this.gameSettings[name] = true;
-              this.saveSettings();
-            }
-            return this.gameSettings[name];
-          });
+          return activities.filter((activity) => this.filterActivity(activity));
         }
       );
     }
+  }
+
+  /**
+   * Creates UI components for managing game visibility settings
+   * @returns {HTMLElement} Settings panel container
+   */
+  getSettingsPanel() {
+    // Create settings panel UI
+    const panel = document.createElement("div");
+    panel.className = "game-activity-control-panel";
+
+    const gameList = document.createElement("div");
+    gameList.className = "game-control-list";
+    this.updateGameList(gameList);
+    panel.appendChild(gameList);
+
+    return panel;
+  }
+
+  /**
+   * Updates the game list UI with current settings
+   * @param {HTMLElement} gameList - The list element to update
+   */
+  updateGameList(gameList) {
+    gameList.innerHTML = "";
+    Object.entries(this.gameSettings).forEach(([game, enabled]) => {
+      gameList.appendChild(this.createGameRow(game, enabled, gameList));
+    });
+  }
+
+  /**
+   * Persists current settings to BetterDiscord storage
+   */
+  saveSettings() {
+    // Save settings to BetterDiscord storage
+    BdApi.Data.save("GameActivityControl", "games", this.gameSettings);
+  }
+
+  /**
+   * Extracts the game name from various possible sources
+   * @param {Object} game - The game object
+   * @returns {string|undefined} The game name if found
+   */
+  getGameName(game) {
+    return game?.name || game?.applicationName || game?.exeName;
+  }
+
+  /**
+   * Creates a label element for a game in the settings panel
+   * @param {string} game - The name of the game
+   * @returns {HTMLElement} The created label element
+   */
+  createGameLabel(game) {
+    const gameLabel = document.createElement("span");
+    gameLabel.textContent = game;
+    return gameLabel;
+  }
+
+  /**
+   * Creates a toggle switch element for a game in the settings panel
+   * @param {string} game - The name of the game
+   * @param {boolean} enabled - Whether the game is visible
+   * @returns {HTMLElement} The created toggle switch element
+   */
+  createToggleSwitch(game, enabled) {
+    const toggleContainer = document.createElement("label");
+    toggleContainer.className = "toggle-switch";
+
+    const toggleSwitch = document.createElement("input");
+    toggleSwitch.type = "checkbox";
+    toggleSwitch.checked = enabled;
+    toggleSwitch.onchange = () => {
+      this.gameSettings[game] = toggleSwitch.checked;
+      this.saveSettings();
+    };
+
+    const slider = document.createElement("span");
+    slider.className = "toggle-slider";
+
+    toggleContainer.appendChild(toggleSwitch);
+    toggleContainer.appendChild(slider);
+    return toggleContainer;
+  }
+
+  /**
+   * Creates a remove button element for a game in the settings panel
+   * @param {string} game - The name of the game
+   * @param {HTMLElement} gameList - The parent list element
+   * @returns {HTMLElement} The created remove button element
+   */
+  createRemoveButton(game, gameList) {
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "×";
+    removeButton.className = "game-control-remove";
+    removeButton.onclick = () => {
+      delete this.gameSettings[game];
+      this.saveSettings();
+      this.updateGameList(gameList);
+    };
+    return removeButton;
+  }
+
+  /**
+   * Creates a row element for a game in the settings panel
+   * @param {string} game - The name of the game
+   * @param {boolean} enabled - Whether the game is visible
+   * @param {HTMLElement} gameList - The parent list element
+   * @returns {HTMLElement} The created row element
+   */
+  createGameRow(game, enabled, gameList) {
+    const gameRow = document.createElement("div");
+    gameRow.className = "game-control-item";
+
+    gameRow.appendChild(this.createGameLabel(game));
+    gameRow.appendChild(this.createToggleSwitch(game, enabled));
+    gameRow.appendChild(this.createRemoveButton(game, gameList));
+
+    return gameRow;
   }
 
   loadStyles() {
@@ -260,66 +420,5 @@ module.exports = class GameActivityControl {
         }
     `;
     BdApi.DOM.addStyle("GameActivityControl", css);
-  }
-
-  getSettingsPanel() {
-    // Create settings panel UI
-    const panel = document.createElement("div");
-    panel.className = "game-activity-control-panel";
-
-    const gameList = document.createElement("div");
-    gameList.className = "game-control-list";
-    this.updateGameList(gameList);
-    panel.appendChild(gameList);
-
-    return panel;
-  }
-
-  updateGameList(gameList) {
-    // Create UI elements for each game in settings
-    gameList.innerHTML = "";
-
-    Object.entries(this.gameSettings).forEach(([game, enabled]) => {
-      const gameRow = document.createElement("div");
-      gameRow.className = "game-control-item";
-
-      const gameLabel = document.createElement("span");
-      gameLabel.textContent = game;
-
-      const toggleContainer = document.createElement("label");
-      toggleContainer.className = "toggle-switch";
-
-      const toggleSwitch = document.createElement("input");
-      toggleSwitch.type = "checkbox";
-      toggleSwitch.checked = enabled;
-      toggleSwitch.onchange = () => {
-        this.gameSettings[game] = toggleSwitch.checked;
-        this.saveSettings();
-      };
-
-      const slider = document.createElement("span");
-      slider.className = "toggle-slider";
-
-      const removeButton = document.createElement("button");
-      removeButton.textContent = "×";
-      removeButton.className = "game-control-remove";
-      removeButton.onclick = () => {
-        delete this.gameSettings[game];
-        this.saveSettings();
-        this.updateGameList(gameList);
-      };
-
-      toggleContainer.appendChild(toggleSwitch);
-      toggleContainer.appendChild(slider);
-      gameRow.appendChild(gameLabel);
-      gameRow.appendChild(toggleContainer);
-      gameRow.appendChild(removeButton);
-      gameList.appendChild(gameRow);
-    });
-  }
-
-  saveSettings() {
-    // Save settings to BetterDiscord storage
-    BdApi.Data.save("GameActivityControl", "games", this.gameSettings);
   }
 };
