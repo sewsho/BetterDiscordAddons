@@ -6,7 +6,7 @@
 
 Selectively control which games show up in your Discord activity status.
 
-![Plugin Preview](https://i.imgur.com/GxqfMaK.png)
+![Plugin Preview](https://i.imgur.com/qZ8Z4qE.png)
 
 ---
 
@@ -14,7 +14,7 @@ Selectively control which games show up in your Discord activity status.
 
 **Features**
 
-- Choose which games appear in your Discord status
+- Choose which games appear in your Discord activity status
 - Games are automatically detected when launched
 - Simple toggle switches for each game
 - Settings persist between Discord restarts
