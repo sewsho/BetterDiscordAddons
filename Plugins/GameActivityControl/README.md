@@ -2,9 +2,9 @@
 
 # Game Activity Control
 
-![Version](https://img.shields.io/badge/version-1.1.1-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
 
-Selectively control which games show up in your Discord status.
+Selectively control which games show up in your Discord activity status.
 
 ![Plugin Preview](https://i.imgur.com/GxqfMaK.png)
 
@@ -18,6 +18,8 @@ Selectively control which games show up in your Discord status.
 - Games are automatically detected when launched
 - Simple toggle switches for each game
 - Settings persist between Discord restarts
+- Search and filter your games
+- Sort by name or last played time
 
 **Installation**
 
@@ -32,6 +34,7 @@ Selectively control which games show up in your Discord status.
 3. Click on GameActivityControl Settings (⚙️)
 4. Launch a game once to add it to your list permanently
 5. Use toggles to show/hide specific games
+6. Search or sort your games as needed
 
 **FAQ**
 
@@ -45,6 +48,6 @@ Issues or questions? Contact `sewsho` on Discord
 
 ---
 
-<sub>MIT © 2024 Sewsho</sub>
+<sub>MIT &copy; 2024 Sewsho</sub>
 
 </div>
