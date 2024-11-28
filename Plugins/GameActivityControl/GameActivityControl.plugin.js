@@ -2,7 +2,7 @@
  * @name GameActivityControl
  * @author Sewsho
  * @description Selectively control which games show up in your Discord activity status
- * @version 1.1.0
+ * @version 1.1.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/GameActivityControl/GameActivityControl.plugin.js
  */
 
@@ -67,10 +67,42 @@ module.exports = class GameActivityControl {
   }
 
   /**
+   * Extracts the game name from the activity object
+   * @param {Object} activity - The activity object from Discord
+   * @returns {string|undefined} The game name if found
+   */
+  getGameName(activity) {
+    return activity?.name;
+  }
+
+  /**
+   * Ensures a game is tracked in settings and returns its visibility state
+   * @param {string} gameName - The name of the game
+   * @returns {boolean} Whether the game should be visible (true by default for new games)
+   */
+  ensureGameInSettings(gameName) {
+    if (!gameName) return true;
+    
+    if (!(gameName in this.gameSettings)) {
+      this.gameSettings[gameName] = true;
+      this.saveSettings();
+    }
+    return this.gameSettings[gameName];
+  }
+
+  /**
+   * Filters an activity based on user preferences
+   * @param {Object} activity - Discord activity object
+   * @returns {boolean} Whether the activity should be shown
+   */
+  filterActivity(activity) {
+    const name = this.getGameName(activity);
+    return this.ensureGameInSettings(name);
+  }
+
+  /**
    * Sets up game detection and monitoring
-   * - Locates and patches Discord's game detection module
-   * - Sets up activity monitoring
-   * - Subscribes to game detection events
+   * Initializes the game module and sets up activity tracking
    * @throws {Error} When required Discord modules cannot be found
    */
   initializeGameModule() {
@@ -95,11 +127,8 @@ module.exports = class GameActivityControl {
             this.unsubscribe = DispatchModule.subscribe("GAME_DETECTION_CHANGE", () => {
               const currentActivities = ActivityStore.getActivities();
               currentActivities.forEach((activity) => {
-                const name = activity?.name || activity?.applicationName;
-                if (name && !(name in this.gameSettings)) {
-                  this.gameSettings[name] = true;
-                  this.saveSettings();
-                }
+                const name = this.getGameName(activity);
+                this.ensureGameInSettings(name);
               });
             });
           }
@@ -122,44 +151,15 @@ module.exports = class GameActivityControl {
   }
 
   /**
-   * Filters activities based on user preferences and updates settings for new games
-   * @param {Object} activity Discord activity object
-   * @returns {boolean} Whether the activity should be shown
-   */
-  filterActivity(activity) {
-    const name = activity?.name || activity?.applicationName;
-    if (!name) return true;
-
-    if (!(name in this.gameSettings)) {
-      this.gameSettings[name] = true;
-      this.saveSettings();
-    }
-    return this.gameSettings[name];
-  }
-
-  /**
    * Patches Discord's internal methods to filter game activities
-   * - Modifies getGame to filter individual games
-   * - Patches presence and activity methods to respect user preferences
+   * Modifies getGame, getLocalPresence, and getActivities to respect user preferences
    */
   patchGameModule() {
     // Patch Discord methods to filter game activity
     BdApi.Patcher.after("GameActivityControl", this.gameModule, "getGame", (_, args, game) => {
       if (!game) return game;
-
-      const gameName = game.name || game.applicationName || game.exeName;
-      if (!gameName) return game;
-
-      if (!(gameName in this.gameSettings)) {
-        this.gameSettings[gameName] = true;
-        this.saveSettings();
-      }
-
-      if (!this.gameSettings[gameName]) {
-        return null;
-      }
-
-      return game;
+      const gameName = this.getGameName(game);
+      return this.ensureGameInSettings(gameName) ? game : null;
     });
 
     const ActivityStore = BdApi.Webpack.getModule(
@@ -173,15 +173,7 @@ module.exports = class GameActivityControl {
         "getLocalPresence",
         (_, args, presence) => {
           if (presence?.activities) {
-            presence.activities = presence.activities.filter((activity) => {
-              const name = activity?.name || activity?.applicationName;
-              if (!name) return true;
-              if (!(name in this.gameSettings)) {
-                this.gameSettings[name] = true;
-                this.saveSettings();
-              }
-              return this.gameSettings[name];
-            });
+            presence.activities = presence.activities.filter(activity => this.filterActivity(activity));
           }
           return presence;
         }
@@ -193,7 +185,7 @@ module.exports = class GameActivityControl {
         "getActivities",
         (_, args, activities) => {
           if (!Array.isArray(activities)) return activities;
-          return activities.filter((activity) => this.filterActivity(activity));
+          return activities.filter(activity => this.filterActivity(activity));
         }
       );
     }
@@ -233,15 +225,6 @@ module.exports = class GameActivityControl {
   saveSettings() {
     // Save settings to BetterDiscord storage
     BdApi.Data.save("GameActivityControl", "games", this.gameSettings);
-  }
-
-  /**
-   * Extracts the game name from various possible sources
-   * @param {Object} game - The game object
-   * @returns {string|undefined} The game name if found
-   */
-  getGameName(game) {
-    return game?.name || game?.applicationName || game?.exeName;
   }
 
   /**
