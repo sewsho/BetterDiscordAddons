@@ -14,7 +14,6 @@ module.exports = class GameActivityControl {
     this.gameSettings = BdApi.Data.load("GameActivityControl", "games") || {};
     this.gameMetadata = BdApi.Data.load("GameActivityControl", "metadata") || {};
     this.initialized = false;
-    this.checkInterval = null;
     this.gameModule = null;
     this.unsubscribe = null;
   }
@@ -26,12 +25,6 @@ module.exports = class GameActivityControl {
     try {
       this.loadStyles();
       this.initializeGameModule();
-
-      this.checkInterval = setInterval(() => {
-        if (!this.gameModule || !this.initialized) {
-          this.initializeGameModule();
-        }
-      }, 100);
     } catch (error) {
       BdApi.showToast("GameActivityControl: Failed to start - " + error.message, { type: "error" });
     }
@@ -43,16 +36,12 @@ module.exports = class GameActivityControl {
   stop() {
     BdApi.DOM.removeStyle("GameActivityControl");
     BdApi.Patcher.unpatchAll("GameActivityControl");
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
-    }
-    this.initialized = false;
-    this.gameModule = null;
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
+    this.initialized = false;
+    this.gameModule = null;
   }
 
   /**
@@ -141,10 +130,6 @@ module.exports = class GameActivityControl {
       }
 
       this.initialized = true;
-      if (this.checkInterval) {
-        clearInterval(this.checkInterval);
-        this.checkInterval = null;
-      }
     } catch (error) {
       console.error("GameActivityControl: Failed to initialize -", error);
       BdApi.showToast("Failed to initialize game detection. Retrying...", { type: "error" });
