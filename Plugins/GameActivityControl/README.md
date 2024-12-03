@@ -4,7 +4,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.2.1-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
 
-Selectively control which games show up in your Discord activity status.
+Selectively control which games show up in your Discord activity status. When a game is disabled, it will be completely hidden from your activity status - your friends won't see you playing it, and it won't show up in your profile or status.
 
 ![Plugin Preview](https://i.imgur.com/qZ8Z4qE.png)
 
@@ -12,36 +12,43 @@ Selectively control which games show up in your Discord activity status.
 
 </div>
 
-**Features**
+## Features
 
-- Choose which games appear in your Discord activity status
-- Games are automatically detected when launched
-- Simple toggle switches for each game
-- Settings persist between Discord restarts
-- Search and filter your games
-- Sort by name or last played time
+- **Game Activity Control**: Choose which games appear in your Discord activity status
+  - When a game is disabled, it's completely hidden from your friends and profile
+  - Toggle games on/off at any time - changes take effect immediately
+  - Your settings persist between Discord restarts
+- **Automatic Game Detection**: Games are automatically detected and added to your list when launched
+- **Easy Management**:
+  - Simple toggle switches for each game
+  - Search and filter your games list
+  - Sort by name or last played time
+  - Remove games you don't play anymore
+  - View when you last played each game
 
-**Installation**
+## Installation
 
-1. Download `GameActivityControl.plugin.js`
-2. Move to BetterDiscord plugins folder
-3. Enable in Discord Settings > Plugins
+1. Install [BetterDiscord](https://betterdiscord.app/)
+2. Download [GameActivityControl.plugin.js](https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/GameActivityControl/GameActivityControl.plugin.js)
+3. Move the downloaded file to your BetterDiscord plugins folder
+4. Enable the plugin in Discord's plugin settings
 
-**Usage**
+## Usage
 
-1. Open Discord User Settings
-2. Scroll down to Plugins section
-3. Click on GameActivityControl Settings (⚙️)
-4. Launch a game once to add it to your list permanently
-5. Use toggles to show/hide specific games
-6. Search or sort your games as needed
+1. Open Discord Settings
+2. Go to the Plugins section
+3. Click on GameActivityControl settings
+4. Use the toggle switches to enable/disable games:
+   - Enabled: Game will show up in your activity status
+   - Disabled: Game will be completely hidden from your activity status
 
-**FAQ**
+## FAQ
 
 Q: Some games aren't being detected after a Discord restart, why?  
 A: For best compatibility, launch Discord before starting these games. Most games work fine, but some may require Discord to be running first.
 
-**Support**  
+## Support
+
 Issues or questions? Contact `sewsho` on Discord
 
 <div align="center">
