@@ -2,7 +2,7 @@
  * @name GameActivityControl
  * @author Sewsho
  * @description Selectively control which games show up in your Discord activity status
- * @version 1.2.1
+ * @version 1.2.2
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/GameActivityControl/GameActivityControl.plugin.js
  */
 
@@ -12,7 +12,8 @@ module.exports = class GameActivityControl {
    */
   constructor() {
     this.gameSettings = BdApi.Data.load("GameActivityControl", "games") || {};
-    this.gameMetadata = BdApi.Data.load("GameActivityControl", "metadata") || {};
+    this.gameMetadata =
+      BdApi.Data.load("GameActivityControl", "metadata") || {};
     this.initialized = false;
     this.gameModule = null;
     this.unsubscribe = null;
@@ -26,7 +27,10 @@ module.exports = class GameActivityControl {
       this.loadStyles();
       this.initializeGameModule();
     } catch (error) {
-      BdApi.showToast("GameActivityControl: Failed to start - " + error.message, { type: "error" });
+      BdApi.UI.showToast(
+        "GameActivityControl: Failed to start - " + error.message,
+        { type: "error" }
+      );
     }
   }
 
@@ -58,7 +62,7 @@ module.exports = class GameActivityControl {
    */
   ensureGameInSettings(gameName) {
     if (!gameName) return true;
-    
+
     if (!(gameName in this.gameSettings)) {
       this.gameSettings[gameName] = true;
       this.saveSettings();
@@ -72,7 +76,7 @@ module.exports = class GameActivityControl {
    */
   updateGameMetadata(gameName) {
     if (!gameName) return;
-    
+
     if (!this.gameMetadata[gameName]) {
       this.gameMetadata[gameName] = {};
     }
@@ -99,7 +103,9 @@ module.exports = class GameActivityControl {
    */
   initializeGameModule() {
     try {
-      const gameModule = BdApi.Webpack.getModule((m) => m?.getName?.() === "GameStore");
+      const gameModule = BdApi.Webpack.getModule(
+        (m) => m?.getName?.() === "GameStore"
+      );
       if (!gameModule) {
         throw new Error("Could not find GameStore module");
       }
@@ -115,13 +121,16 @@ module.exports = class GameActivityControl {
           BdApi.Webpack.Filters.byProps("dispatch", "subscribe")
         );
         if (DispatchModule?.subscribe) {
-          this.unsubscribe = DispatchModule.subscribe("GAME_DETECTION_CHANGE", () => {
-            const currentActivities = ActivityStore.getActivities();
-            currentActivities.forEach((activity) => {
-              const name = this.getGameName(activity);
-              this.ensureGameInSettings(name);
-            });
-          });
+          this.unsubscribe = DispatchModule.subscribe(
+            "GAME_DETECTION_CHANGE",
+            () => {
+              const currentActivities = ActivityStore.getActivities();
+              currentActivities.forEach((activity) => {
+                const name = this.getGameName(activity);
+                this.ensureGameInSettings(name);
+              });
+            }
+          );
 
           DispatchModule.dispatch({
             type: "GAME_DETECTION_CHANGE",
@@ -132,7 +141,9 @@ module.exports = class GameActivityControl {
       this.initialized = true;
     } catch (error) {
       console.error("GameActivityControl: Failed to initialize -", error);
-      BdApi.showToast("Failed to initialize game detection. Retrying...", { type: "error" });
+      BdApi.UI.showToast("Failed to initialize game detection. Retrying...", {
+        type: "error",
+      });
     }
   }
 
@@ -144,11 +155,16 @@ module.exports = class GameActivityControl {
       BdApi.Webpack.Filters.byProps("getActivities", "getLocalPresence")
     );
 
-    BdApi.Patcher.after("GameActivityControl", this.gameModule, "getGame", (_, args, game) => {
-      if (!game) return game;
-      const gameName = this.getGameName(game);
-      return this.ensureGameInSettings(gameName) ? game : null;
-    });
+    BdApi.Patcher.after(
+      "GameActivityControl",
+      this.gameModule,
+      "getGame",
+      (_, args, game) => {
+        if (!game) return game;
+        const gameName = this.getGameName(game);
+        return this.ensureGameInSettings(gameName) ? game : null;
+      }
+    );
 
     if (ActivityStore) {
       BdApi.Patcher.after(
@@ -157,7 +173,7 @@ module.exports = class GameActivityControl {
         "getLocalPresence",
         (_, args, presence) => {
           if (presence?.activities) {
-            presence.activities = presence.activities.filter(activity => 
+            presence.activities = presence.activities.filter((activity) =>
               this.ensureGameInSettings(this.getGameName(activity))
             );
           }
@@ -171,7 +187,7 @@ module.exports = class GameActivityControl {
         "getActivities",
         (_, args, activities) => {
           if (!Array.isArray(activities)) return activities;
-          return activities.filter(activity => 
+          return activities.filter((activity) =>
             this.ensureGameInSettings(this.getGameName(activity))
           );
         }
@@ -194,7 +210,7 @@ module.exports = class GameActivityControl {
     searchInput.type = "text";
     searchInput.placeholder = "Search games...";
     searchInput.className = "gac-search";
-    
+
     const sortSelect = document.createElement("select");
     sortSelect.className = "gac-sort";
     const sortOptions = [
@@ -258,20 +274,25 @@ module.exports = class GameActivityControl {
    * @param {Object} filters - The current filters
    */
   updateGameList(gameList, filters = {}) {
-    const { searchTerm = "", sortBy = "last-played", viewFilter = "all" } = filters;
+    const {
+      searchTerm = "",
+      sortBy = "last-played",
+      viewFilter = "all",
+    } = filters;
     gameList.innerHTML = "";
 
     let games = Object.keys(this.gameSettings)
-      .filter(game => {
+      .filter((game) => {
         const matchesSearch = game.toLowerCase().includes(searchTerm);
-        const matchesFilter = viewFilter === "all" 
-          || (viewFilter === "visible" && this.gameSettings[game])
-          || (viewFilter === "hidden" && !this.gameSettings[game]);
+        const matchesFilter =
+          viewFilter === "all" ||
+          (viewFilter === "visible" && this.gameSettings[game]) ||
+          (viewFilter === "hidden" && !this.gameSettings[game]);
         return matchesSearch && matchesFilter;
       })
       .sort((a, b) => {
         if (this.gameSettings[a] !== this.gameSettings[b]) {
-          return this.gameSettings[a] ? 1 : -1; 
+          return this.gameSettings[a] ? 1 : -1;
         }
 
         switch (sortBy) {
@@ -281,7 +302,7 @@ module.exports = class GameActivityControl {
             const aTime = this.gameMetadata[a]?.lastPlayed || 0;
             const bTime = this.gameMetadata[b]?.lastPlayed || 0;
             return bTime - aTime;
-          default: 
+          default:
             return a.localeCompare(b);
         }
       });
@@ -289,14 +310,14 @@ module.exports = class GameActivityControl {
     if (games.length === 0) {
       const emptyMessage = document.createElement("div");
       emptyMessage.className = "gac-empty-message";
-      emptyMessage.textContent = searchTerm 
+      emptyMessage.textContent = searchTerm
         ? "No games found matching your search"
         : "No games found";
       gameList.appendChild(emptyMessage);
       return;
     }
 
-    games.forEach(game => {
+    games.forEach((game) => {
       const row = this.createGameRow(game, this.gameSettings[game], gameList);
       gameList.appendChild(row);
     });
@@ -315,7 +336,7 @@ module.exports = class GameActivityControl {
 
     const nameContainer = document.createElement("div");
     nameContainer.className = "gac-name-container";
-    
+
     const label = this.createGameLabel(game);
     nameContainer.appendChild(label);
 
@@ -323,13 +344,15 @@ module.exports = class GameActivityControl {
     if (lastPlayed) {
       const timeInfo = document.createElement("div");
       timeInfo.className = "gac-last-played";
-      timeInfo.textContent = `Last played: ${this.formatLastPlayed(lastPlayed)}`;
+      timeInfo.textContent = `Last played: ${this.formatLastPlayed(
+        lastPlayed
+      )}`;
       nameContainer.appendChild(timeInfo);
     }
 
     const toggle = this.createToggleSwitch(game, enabled);
     const removeBtn = this.createRemoveButton(game, gameList);
-    
+
     row.appendChild(nameContainer);
     row.appendChild(toggle);
     row.appendChild(removeBtn);
@@ -348,10 +371,10 @@ module.exports = class GameActivityControl {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days} day${days === 1 ? '' : 's'} ago`;
-    if (hours > 0) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-    return 'Just now';
+    if (days > 0) return `${days} day${days === 1 ? "" : "s"} ago`;
+    if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+    return "Just now";
   }
 
   /**

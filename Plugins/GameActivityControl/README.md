@@ -2,7 +2,7 @@
 
 # Game Activity Control
 
-![Version](https://img.shields.io/badge/version-1.2.1-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Discord](https://img.shields.io/badge/Discord-sewsho-5865F2)
 
 Selectively control which games show up in your Discord activity status. When a game is disabled, it will be completely hidden from your activity status - your friends won't see you playing it, and it won't show up in your profile or status.
 
