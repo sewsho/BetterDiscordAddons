@@ -2,7 +2,7 @@
 
 # Game Activity Control Plugin
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
 
 ## Description
 
@@ -10,7 +10,7 @@ This plugin allows users to selectively control which games show up in their Dis
 
 ## Preview
 
-![Game Activity Control Preview](https://i.imgur.com/cQeAKPf.png)
+![Game Activity Control Preview](https://i.imgur.com/HvgWTaU.png)
 
 </div>
 
@@ -22,16 +22,32 @@ This plugin allows users to selectively control which games show up in their Dis
 
 ## Usage
 
-After installation, you can configure the games that you want to show or hide in your Discord activity status by following these steps:
+1. **Open Settings**: Navigate to the BetterDiscord settings and find the Game Activity Control plugin.
+2. **Select Games**: Toggle the switches next to games to show or hide them in your activity status.
+3. **Apply Changes**: Click "Done" to save your preferences.
+4. **Check Status**: Open Discord to ensure your selected games are displayed.
 
-1. **Open the Plugin Settings**: Navigate to the BetterDiscord settings and find the Game Activity Control plugin in the plugins list.
-2. **Select Games**: If you see a message saying "No games found," make sure to run a game first so that Discord can detect it. Once a game is detected, it will appear in the settings when you reopen them.
-3. **Toggle the switches** next to the games you want to display in your Discord activity. New games are shown by default.
-4. **Hide Games**: To hide a game from your activity status, simply untoggle the switch next to it. You may need to tab into the game first before its presence gets hidden, but this is only necessary the first time of adding.
-5. **Done**: After making your selections, click the "Done" button to apply your changes.
-6. **Check Your Status**: Open Discord and check your activity status to ensure that only the selected games are displayed.
+You can update your game visibility settings anytime through the plugin settings.
 
-You can repeat these steps anytime you want to update your game visibility settings.
+## Changelog
+
+### Version 1.0.1
+
+- Updated to match new BdApi version for improved compatibility.
+- Temporarily removed search functionality; will be re-added later.
+- Introduced automatic hiding of newly added games via a configurable setting.
+- Enhanced settings panel with collapsible categories for better navigation.
+- Added changelog for version updates and ongoing improvements.
+
+### Version 1.0.0
+
+- Initial release.
+- Adds functionality to selectively control which games show up in Discord activity status.
+- Introduces a settings panel to toggle visibility of individual games.
+- Implements search and filter features for quick game lookup.
+- Saves game visibility settings locally and applies them across sessions.
+- Includes custom styles for the settings UI, with a modern toggle switch for each game.
+- Patches Discord's self-presence store to filter out hidden games from the activity list.
 
 ## Support
 
