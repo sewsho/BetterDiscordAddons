@@ -2,7 +2,7 @@
 
 # ActivityFilter Plugin
 
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 
 ## Description
 
@@ -31,12 +31,16 @@ You can update your activity visibility settings anytime through the plugin sett
 
 ## Changelog
 
+### Version 1.1.0
+
+- Added filtering for activities based on type (Playing, Streaming, Listening, Watching, Competing).
+- Categories without any activities will be hidden.
+- Enhanced settings panel with collapsible categories for better navigation.
+
 ### Version 1.0.1
 
 - Updated to match new BdApi version for improved compatibility.
 - Temporarily removed search functionality; will be re-added later.
-- Introduced automatic hiding of newly added activities via a configurable setting.
-- Enhanced settings panel with collapsible categories for better navigation.
 - Added changelog for version updates and ongoing improvements.
 
 ### Version 1.0.0
@@ -51,7 +55,7 @@ You can update your activity visibility settings anytime through the plugin sett
 
 ## Support
 
-If you have any questions or need support, feel free to reach out to me on Discord: **Sewsho**.
+If you have any questions or need support, feel free to reach out to me on Discord: **Sewsho**
 
 ## License
 
