@@ -2,7 +2,7 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Customize which activities, games, or apps are displayed in your Discord status with advanced filtering and visibility options.
- * @version 1.1.0
+ * @version 1.1.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
@@ -14,26 +14,24 @@ module.exports = (meta) => {
   const config = {
     changelog: [
       {
-        title: 'New Stuff',
-        type: 'added',
-        items: [
-          'Added filtering for activities based on type (Playing, Streaming, Listening, Watching, Competing).',
-          'Categories without any activities will be hidden.',
-        ],
-      },
-      {
         title: 'Improvements',
         type: 'improved',
         items: [
-          'Enhanced settings panel with collapsible categories for better navigation.',
+          'Code optimization and cleanup for better performance',
+          'Enhanced error handling for activity settings',
         ],
+      },
+      {
+        title: 'Bug Fixes',
+        type: 'fixed',
+        items: ['Improved handling of undefined activity states'],
       },
       {
         title: 'On-going',
         type: 'progress',
         items: [
-          'Working on profiles: create and select activities for each profile (e.g., "Work" profile for relevant activities).',
-          'Working on reintroducing the activity search functionality.',
+          'Working on profiles: create and select activities for each profile (e.g., "Work" profile for relevant activities)',
+          'Working on reintroducing the activity search functionality',
         ],
       },
     ],
@@ -43,7 +41,6 @@ module.exports = (meta) => {
         id: 'settings',
         name: 'Settings',
         collapsible: true,
-        shown: true,
         settings: [
           {
             type: 'switch',
@@ -59,7 +56,6 @@ module.exports = (meta) => {
         id: 'playing',
         name: 'Playing',
         collapsible: true,
-        shown: true,
         settings: [],
       },
       {
@@ -67,7 +63,6 @@ module.exports = (meta) => {
         id: 'listening',
         name: 'Listening',
         collapsible: true,
-        shown: true,
         settings: [],
       },
       {
@@ -75,7 +70,6 @@ module.exports = (meta) => {
         id: 'streaming',
         name: 'Streaming',
         collapsible: true,
-        shown: true,
         settings: [],
       },
       {
@@ -83,7 +77,6 @@ module.exports = (meta) => {
         id: 'watching',
         name: 'Watching',
         collapsible: true,
-        shown: true,
         settings: [],
       },
       {
@@ -91,7 +84,6 @@ module.exports = (meta) => {
         id: 'competing',
         name: 'Competing',
         collapsible: true,
-        shown: true,
         settings: [],
       },
     ],
@@ -115,64 +107,29 @@ module.exports = (meta) => {
   }
 
   function addNewActivitiesToSettings(activities) {
-    const pluginSettings = config.settings.find(
-      (setting) => setting.id === 'settings'
-    ).settings;
+    const activityTypes = {
+      0: 'playing',
+      1: 'streaming',
+      2: 'listening',
+      3: 'watching',
+      5: 'competing',
+    };
 
-    const playingSettings = config.settings.find(
-      (setting) => setting.id === 'playing'
-    ).settings;
-    const streamingSettings = config.settings.find(
-      (setting) => setting.id === 'streaming'
-    ).settings;
-    const listeningSettings = config.settings.find(
-      (setting) => setting.id === 'listening'
-    ).settings;
-    const watchingSettings = config.settings.find(
-      (setting) => setting.id === 'watching'
-    ).settings;
-    const competingSettings = config.settings.find(
-      (setting) => setting.id === 'competing'
-    ).settings;
-
-    const newActivitiesHidden = pluginSettings.find(
+    const getSettingsGroup = (id) => config.settings.find((setting) => setting.id === id)?.settings;
+    const newActivitiesHidden = getSettingsGroup('settings').find(
       (setting) => setting.id === 'newActivitiesHidden'
     ).value;
 
-    activities.forEach((activity) => {
-      const activityName = activity.name;
-      const activityType = activity.type;
+    activities.forEach(({ name, type }) => {
+      const categoryId = activityTypes[type];
+      if (!categoryId || !name) return;
 
-      let settingsArray;
-
-      switch (activityType) {
-        case 0: // Playing
-          settingsArray = playingSettings;
-          break;
-        case 1: // Streaming
-          settingsArray = streamingSettings;
-          break;
-        case 2: // Listening
-          settingsArray = listeningSettings;
-          break;
-        case 3: // Watching
-          settingsArray = watchingSettings;
-          break;
-        case 5: // Competing
-          settingsArray = competingSettings;
-          break;
-        default:
-          return;
-      }
-
-      if (
-        activityName &&
-        !settingsArray.some((setting) => setting.id === activityName)
-      ) {
-        settingsArray.push({
+      const categorySettings = getSettingsGroup(categoryId);
+      if (!categorySettings.some((setting) => setting.id === name)) {
+        categorySettings.push({
           type: 'switch',
-          id: activityName,
-          name: activityName,
+          id: name,
+          name: name,
           value: !newActivitiesHidden,
         });
       }
@@ -180,89 +137,44 @@ module.exports = (meta) => {
   }
 
   function isActivityHidden(activityType, activityName) {
-    let settingsArray;
-    switch (activityType) {
-      case 0: // Playing
-        settingsArray = config.settings.find(
-          (setting) => setting.id === 'playing'
-        ).settings;
-        break;
-      case 1: // Streaming
-        settingsArray = config.settings.find(
-          (setting) => setting.id === 'streaming'
-        ).settings;
-        break;
-      case 2: // Listening
-        settingsArray = config.settings.find(
-          (setting) => setting.id === 'listening'
-        ).settings;
-        break;
-      case 3: // Watching
-        settingsArray = config.settings.find(
-          (setting) => setting.id === 'watching'
-        ).settings;
-        break;
-      case 5: // Competing
-        settingsArray = config.settings.find(
-          (setting) => setting.id === 'competing'
-        ).settings;
-        break;
-      default:
-        return false;
-    }
+    const activityTypes = {
+      0: 'playing',
+      1: 'streaming',
+      2: 'listening',
+      3: 'watching',
+      5: 'competing',
+    };
 
-    const activitySetting = settingsArray.find(
-      (setting) => setting.id === activityName
-    );
-    return activitySetting ? activitySetting.value === false : false;
+    const categoryId = activityTypes[activityType];
+    if (!categoryId) return false;
+
+    const categorySettings = config.settings.find((setting) => setting.id === categoryId)?.settings;
+    const activitySetting = categorySettings?.find((setting) => setting.id === activityName);
+
+    return activitySetting?.value === false;
   }
 
   function patchSelfPresenceStore() {
-    const selfPresenceStore = Webpack.getByKeys(
-      'getLocalPresence',
-      'getActivities'
-    );
+    const selfPresenceStore = Webpack.getByKeys('getLocalPresence', 'getActivities');
 
-    BdApi.Patcher.after(
-      meta.name,
-      selfPresenceStore,
-      'getActivities',
-      (_, args, activities) => {
-        addNewActivitiesToSettings(activities);
-        Data.save(meta.name, 'settings', config.settings);
+    BdApi.Patcher.after(meta.name, selfPresenceStore, 'getActivities', (_, args, activities) => {
+      addNewActivitiesToSettings(activities);
+      Data.save(meta.name, 'settings', config.settings);
 
-        const filteredActivities = activities.filter((activity) => {
-          const activityName = activity.name;
-          const activityType = activity.type;
-
-          return !isActivityHidden(activityType, activityName);
-        });
-
-        return filteredActivities;
-      }
-    );
+      return activities.filter(({ name, type }) => !isActivityHidden(type, name));
+    });
   }
 
   function sortActivitiesSettings() {
-    const activityTypes = [
-      'playing',
-      'streaming',
-      'listening',
-      'watching',
-      'competing',
-    ];
+    const activityTypes = ['playing', 'streaming', 'listening', 'watching', 'competing'];
 
     activityTypes.forEach((type) => {
-      const activitySettings = config.settings.find(
-        (setting) => setting.id === type
-      ).settings;
+      const settings = config.settings.find((s) => s.id === type)?.settings;
+      if (!settings) return;
 
-      activitySettings.sort((a, b) => {
-        if (a.value === b.value) {
-          return a.name.localeCompare(b.name);
-        }
-        return a.value ? 1 : -1;
-      });
+      settings.sort((a, b) =>
+        a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1
+      );
     });
 
     Data.save(meta.name, 'settings', config.settings);
@@ -273,14 +185,10 @@ module.exports = (meta) => {
   }
 
   function handleSettingChange(category, id, value) {
-    const categorySettings = config.settings.find(
-      (setting) => setting.id === category
-    ).settings;
-
-    const setting = categorySettings.find((setting) => setting.id === id);
-    if (setting) {
-      setting.value = value;
-    }
+    const setting = config.settings
+      .find((s) => s.id === category)
+      ?.settings?.find((s) => s.id === id);
+    if (setting) setting.value = value;
 
     Data.save(meta.name, 'settings', config.settings);
   }
