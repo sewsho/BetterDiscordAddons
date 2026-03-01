@@ -2,7 +2,7 @@
  * @name LastSeen
  * @author Sewsho
  * @description Tracks and displays when your friends were last seen.
- * @version 0.0.0
+ * @version 0.3.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/LastSeen/LastSeen.plugin.js
  */
 
@@ -89,5 +89,39 @@ module.exports = class LastSeen {
 
 	_save() {
 		this.Data.save("presenceData", this.presenceData);
+	}
+
+	// ─── Formatting ───────────────────────────────────────────────────────────
+
+	_formatRelative(ts) {
+		if (!ts) return "Never";
+		const d = Math.floor((Date.now() - ts) / 1000);
+		if (d < 60) return `${d}s ago`;
+		if (d < 3600) return `${Math.floor(d / 60)}m ago`;
+		if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
+		if (d < 604800) return `${Math.floor(d / 86400)}d ago`;
+		return new Date(ts).toLocaleDateString();
+	}
+
+	_formatDuration(ts) {
+		if (!ts) return "unknown";
+		const d = Math.floor((Date.now() - ts) / 1000);
+		if (d < 60) return `${d}s`;
+		if (d < 3600) return `${Math.floor(d / 60)}m`;
+		if (d < 86400) return `${Math.floor(d / 3600)}h ${Math.floor((d % 3600) / 60)}m`;
+		return `${Math.floor(d / 86400)}d`;
+	}
+
+	_getText(userId) {
+		const record = this.presenceData[userId];
+		const status = this.PresenceStore?.getStatus(userId) ?? "offline";
+		const isOnline = this._isOnline(status);
+		const ts = isOnline
+			? (record?.lastOnline ?? null)
+			: (record?.lastSeen ?? record?.lastOnline ?? null);
+		return {
+			label: isOnline ? "Online for" : "Last Seen",
+			value: isOnline ? this._formatDuration(ts) : this._formatRelative(ts),
+		};
 	}
 };
