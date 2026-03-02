@@ -33,6 +33,7 @@ module.exports = class LastSeen {
 		this._seedCurrentStatuses();
 		this._boundHandler = this._onPresenceChange.bind(this);
 		this.PresenceStore.addChangeListener(this._boundHandler);
+		this._startObserver();
 		this.UI.showToast("LastSeen started!", { type: "success" });
 	}
 
@@ -175,5 +176,57 @@ module.exports = class LastSeen {
 		});
 		obs.observe(containerEl, { childList: true, subtree: true });
 		setTimeout(() => obs.disconnect(), 2000);
+	}
+
+	_buildInline(userId) {
+		const { label, value } = this._getText(userId);
+		const el = document.createElement("span");
+		el.className = "ls-injected";
+		el.dataset.uid = userId;
+		el.style.cssText = [
+			"font-size:11px",
+			"color:var(--text-muted)",
+			"white-space:nowrap",
+			"flex-shrink:0",
+			"margin-right:8px",
+			"display:flex",
+			"align-items:center",
+		].join(";");
+		el.innerHTML = `<span class="ls-label" style="color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="color:var(--text-normal);font-weight:600">${value}</span>`;
+		return el;
+	}
+
+	_startObserver() {
+		const self = this;
+
+		const injectFriendRow = (row) => {
+			if (row.querySelector(".ls-injected[data-type=friend]")) return;
+			self._whenReady(row, (uid) => {
+				if (row.querySelector(".ls-injected[data-type=friend]")) return;
+				const el = self._buildInline(uid);
+				el.dataset.type = "friend";
+				const actions = row.querySelector("[class*=actions_]");
+				if (actions) actions.prepend(el);
+				else row.appendChild(el);
+			});
+		};
+
+		const handle = (node) => {
+			if (!(node instanceof HTMLElement)) return;
+			const cls = typeof node.className === "string" ? node.className : "";
+
+			if (cls.includes("peopleListItem_")) {
+				injectFriendRow(node);
+				return;
+			}
+			node.querySelectorAll("[class*=peopleListItem_]").forEach(injectFriendRow);
+		};
+
+		this._observer = new MutationObserver((mutations) => {
+			for (const mut of mutations) for (const node of mut.addedNodes) handle(node);
+		});
+
+		this._observer.observe(document.body, { childList: true, subtree: true });
+		document.querySelectorAll("[class*=peopleListItem_]").forEach(injectFriendRow);
 	}
 };
