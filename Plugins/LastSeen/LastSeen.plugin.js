@@ -196,8 +196,39 @@ module.exports = class LastSeen {
 		return el;
 	}
 
+	_buildRow(userId) {
+		const { label, value } = this._getText(userId);
+		const el = document.createElement("div");
+		el.className = "ls-injected";
+		el.dataset.uid = userId;
+		el.style.cssText = [
+			"font-size:12px",
+			"display:flex",
+			"align-items:center",
+			"color:var(--text-muted)",
+			"font-family:var(--font-primary)",
+		].join(";");
+		el.innerHTML = `<span class="ls-label" style="font-size:12px;color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="font-size:12px;font-weight:600;color:var(--text-normal)">${value}</span>`;
+		return el;
+	}
+
 	_startObserver() {
 		const self = this;
+
+		const injectPopout = (node) => {
+			if (node.querySelector(".ls-injected[data-type=popout]")) return;
+			self._whenReady(node, (uid) => {
+				if (node.querySelector(".ls-injected[data-type=popout]")) return;
+				const badge = self._buildRow(uid);
+				badge.dataset.type = "popout";
+				const anchor =
+					node.querySelector("[class*=tags_]") ??
+					node.querySelector("h2 + div") ??
+					node.querySelector("[class*=username_]");
+				if (anchor) anchor.after(badge);
+				else (node.querySelector("[class*=inner_]") ?? node).prepend(badge);
+			});
+		};
 
 		const injectFriendRow = (row) => {
 			if (row.querySelector(".ls-injected[data-type=friend]")) return;
@@ -214,6 +245,19 @@ module.exports = class LastSeen {
 		const handle = (node) => {
 			if (!(node instanceof HTMLElement)) return;
 			const cls = typeof node.className === "string" ? node.className : "";
+
+			if (
+				node.matches?.("[role=dialog][aria-labelledby]") ||
+				cls.includes("user-profile-popout") ||
+				cls.includes("outer_c0bea0")
+			) {
+				injectPopout(node);
+				return;
+			}
+			const popout = node.querySelector(
+				"[role=dialog][aria-labelledby], [class*=user-profile-popout], [class*=outer_c0bea0]",
+			);
+			if (popout) injectPopout(popout);
 
 			if (cls.includes("peopleListItem_")) {
 				injectFriendRow(node);
