@@ -2,7 +2,7 @@
  * @name LastSeen
  * @author Sewsho
  * @description Tracks and displays when your friends were last seen.
- * @version 0.3.0
+ * @version 0.0.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/LastSeen/LastSeen.plugin.js
  */
 
@@ -123,5 +123,57 @@ module.exports = class LastSeen {
 			label: isOnline ? "Online for" : "Last Seen",
 			value: isOnline ? this._formatDuration(ts) : this._formatRelative(ts),
 		};
+	}
+
+	// ─── Fiber Walker ─────────────────────────────────────────────────────────
+
+	_getUserIdFromFiber(domNode) {
+		const key = Object.keys(domNode).find(
+			(k) => k.startsWith("__reactFiber") || k.startsWith("__reactInternalInstance"),
+		);
+		if (!key) return null;
+		let fiber = domNode[key],
+			depth = 0;
+		while (fiber && depth++ < 150) {
+			const p = fiber.memoizedProps ?? fiber.pendingProps ?? {};
+			if (p?.user?.id) return p.user.id;
+			if (p?.member?.user?.id) return p.member.user.id;
+			if (typeof p?.userId === "string") return p.userId;
+			const sp = fiber.stateNode?.props ?? {};
+			if (sp?.user?.id) return sp.user.id;
+			if (sp?.member?.user?.id) return sp.member.user.id;
+			if (typeof sp?.userId === "string") return sp.userId;
+			fiber = fiber.return;
+		}
+		return null;
+	}
+
+	_getUserIdFromNode(node) {
+		let uid = this._getUserIdFromFiber(node);
+		if (uid) return uid;
+		for (const child of node.querySelectorAll("*")) {
+			uid = this._getUserIdFromFiber(child);
+			if (uid) return uid;
+		}
+		return node.querySelector("[data-user-id]")?.dataset?.userId ?? null;
+	}
+
+	// ─── Injection ────────────────────────────────────────────────────────────
+
+	_whenReady(containerEl, cb) {
+		const uid = this._getUserIdFromNode(containerEl);
+		if (uid) {
+			cb(uid);
+			return;
+		}
+		const obs = new MutationObserver(() => {
+			const uid2 = this._getUserIdFromNode(containerEl);
+			if (uid2) {
+				obs.disconnect();
+				cb(uid2);
+			}
+		});
+		obs.observe(containerEl, { childList: true, subtree: true });
+		setTimeout(() => obs.disconnect(), 2000);
 	}
 };
