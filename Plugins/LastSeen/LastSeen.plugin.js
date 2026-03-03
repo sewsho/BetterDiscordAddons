@@ -79,6 +79,7 @@ module.exports = class LastSeen {
 			if (this._isOnline(oldStatus) && !this._isOnline(newStatus)) record.lastSeen = Date.now();
 			record.lastStatus = newStatus;
 			this.presenceData[userId] = record;
+			this._refreshInjected(userId);
 		}
 		if (dirty) this._save();
 	}
@@ -124,6 +125,16 @@ module.exports = class LastSeen {
 			label: isOnline ? "Online for" : "Last Seen",
 			value: isOnline ? this._formatDuration(ts) : this._formatRelative(ts),
 		};
+	}
+
+	_refreshInjected(userId) {
+		const { label, value } = this._getText(userId);
+		document.querySelectorAll(`.ls-injected[data-uid="${userId}"]`).forEach((el) => {
+			const l = el.querySelector(".ls-label");
+			const v = el.querySelector(".ls-value");
+			if (l) l.textContent = label;
+			if (v) v.textContent = value;
+		});
 	}
 
 	// ─── Fiber Walker ─────────────────────────────────────────────────────────
@@ -246,7 +257,6 @@ module.exports = class LastSeen {
 			if (!(node instanceof HTMLElement)) return;
 			const cls = typeof node.className === "string" ? node.className : "";
 
-			// User popout + DM right panel
 			if (
 				node.matches?.("[role=dialog][aria-labelledby]") ||
 				cls.includes("user-profile-popout") ||
@@ -260,7 +270,6 @@ module.exports = class LastSeen {
 			);
 			if (popout) injectPopout(popout);
 
-			// Friends list rows — also match stable aria attribute
 			if (
 				node.matches?.("[role=listitem][data-list-item-id*=people]") ||
 				cls.includes("peopleListItem_")
@@ -282,5 +291,48 @@ module.exports = class LastSeen {
 		document
 			.querySelectorAll("[role=listitem][data-list-item-id*=people], [class*=peopleListItem_]")
 			.forEach(injectFriendRow);
+	}
+
+	// ─── Settings Panel ───────────────────────────────────────────────────────
+
+	getSettingsPanel() {
+		const React = BdApi.React;
+		const self = this;
+
+		const Panel = () => {
+			return React.createElement(
+				"div",
+				{
+					style: {
+						padding: "16px",
+						color: "var(--text-normal)",
+						fontFamily: "var(--font-primary)",
+					},
+				},
+				React.createElement(
+					"button",
+					{
+						style: {
+							padding: "8px 14px",
+							borderRadius: "6px",
+							border: "none",
+							background: "#d22d39",
+							color: "white",
+							cursor: "pointer",
+							fontSize: "13px",
+							fontWeight: 600,
+						},
+						onClick: () => {
+							self.presenceData = {};
+							self._save();
+							self.UI.showToast("LastSeen: Data cleared.", { type: "info" });
+						},
+					},
+					"Clear All Data",
+				),
+			);
+		};
+
+		return React.createElement(Panel);
 	}
 };
