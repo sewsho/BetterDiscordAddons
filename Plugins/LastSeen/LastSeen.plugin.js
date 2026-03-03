@@ -2,7 +2,7 @@
  * @name LastSeen
  * @author Sewsho
  * @description Tracks and displays when your friends were last seen.
- * @version 0.0.0
+ * @version 0.9.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/LastSeen/LastSeen.plugin.js
  */
 
@@ -137,6 +137,42 @@ module.exports = class LastSeen {
 		});
 	}
 
+	// ─── Element Builders ─────────────────────────────────────────────────────
+
+	_buildInline(userId) {
+		const { label, value } = this._getText(userId);
+		const el = document.createElement("span");
+		el.className = "ls-injected";
+		el.dataset.uid = userId;
+		el.style.cssText = [
+			"font-size:11px",
+			"color:var(--text-muted)",
+			"white-space:nowrap",
+			"flex-shrink:0",
+			"margin-right:8px",
+			"display:flex",
+			"align-items:center",
+		].join(";");
+		el.innerHTML = `<span class="ls-label" style="color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="color:var(--text-normal);font-weight:600">${value}</span>`;
+		return el;
+	}
+
+	_buildRow(userId) {
+		const { label, value } = this._getText(userId);
+		const el = document.createElement("div");
+		el.className = "ls-injected";
+		el.dataset.uid = userId;
+		el.style.cssText = [
+			"font-size:12px",
+			"display:flex",
+			"align-items:center",
+			"color:var(--text-muted)",
+			"font-family:var(--font-primary)",
+		].join(";");
+		el.innerHTML = `<span class="ls-label" style="font-size:12px;color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="font-size:12px;font-weight:600;color:var(--text-normal)">${value}</span>`;
+		return el;
+	}
+
 	// ─── Fiber Walker ─────────────────────────────────────────────────────────
 
 	_getUserIdFromFiber(domNode) {
@@ -189,74 +225,81 @@ module.exports = class LastSeen {
 		setTimeout(() => obs.disconnect(), 2000);
 	}
 
-	_buildInline(userId) {
-		const { label, value } = this._getText(userId);
-		const el = document.createElement("span");
-		el.className = "ls-injected";
-		el.dataset.uid = userId;
-		el.style.cssText = [
-			"font-size:11px",
-			"color:var(--text-muted)",
-			"white-space:nowrap",
-			"flex-shrink:0",
-			"margin-right:8px",
-			"display:flex",
-			"align-items:center",
-		].join(";");
-		el.innerHTML = `<span class="ls-label" style="color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="color:var(--text-normal);font-weight:600">${value}</span>`;
-		return el;
+	// Returns the insertion anchor inside the popout (below username/pronouns).
+	// Uses stable tag/attribute selectors first, class wildcards as fallback.
+	_findPopoutAnchor(node) {
+		return (
+			node.querySelector("[class*=tags_]") ??
+			node.querySelector("h2 + div") ??
+			node.querySelector("[class*=username_]") ??
+			null
+		);
 	}
 
-	_buildRow(userId) {
-		const { label, value } = this._getText(userId);
-		const el = document.createElement("div");
-		el.className = "ls-injected";
-		el.dataset.uid = userId;
-		el.style.cssText = [
-			"font-size:12px",
-			"display:flex",
-			"align-items:center",
-			"color:var(--text-muted)",
-			"font-family:var(--font-primary)",
-		].join(";");
-		el.innerHTML = `<span class="ls-label" style="font-size:12px;color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="font-size:12px;font-weight:600;color:var(--text-normal)">${value}</span>`;
-		return el;
+	// Returns the actions container in a friends list row.
+	_findRowActions(row) {
+		return row.querySelector("[class*=actions_]") ?? null;
 	}
 
 	_startObserver() {
 		const self = this;
 
 		const injectPopout = (node) => {
-			if (node.querySelector(".ls-injected[data-type=popout]")) return;
-			self._whenReady(node, (uid) => {
+			try {
 				if (node.querySelector(".ls-injected[data-type=popout]")) return;
-				const badge = self._buildRow(uid);
-				badge.dataset.type = "popout";
-				const anchor =
-					node.querySelector("[class*=tags_]") ??
-					node.querySelector("h2 + div") ??
-					node.querySelector("[class*=username_]");
-				if (anchor) anchor.after(badge);
-				else (node.querySelector("[class*=inner_]") ?? node).prepend(badge);
-			});
+				self._whenReady(node, (uid) => {
+					if (node.querySelector(".ls-injected[data-type=popout]")) return;
+					const badge = self._buildRow(uid);
+					badge.dataset.type = "popout";
+					const anchor = self._findPopoutAnchor(node);
+					if (anchor) {
+						anchor.after(badge);
+					} else {
+						self.api.Logger.warn(
+							"LastSeen: Could not find popout anchor — Discord UI may have changed. Wait for a plugin update.",
+						);
+						(node.querySelector("[class*=inner_]") ?? node).prepend(badge);
+					}
+				});
+			} catch (e) {
+				self.api.Logger.error(
+					"LastSeen: Popout injection failed — Discord UI may have changed. Wait for a plugin update.",
+					e,
+				);
+			}
 		};
 
 		const injectFriendRow = (row) => {
-			if (row.querySelector(".ls-injected[data-type=friend]")) return;
-			self._whenReady(row, (uid) => {
+			try {
 				if (row.querySelector(".ls-injected[data-type=friend]")) return;
-				const el = self._buildInline(uid);
-				el.dataset.type = "friend";
-				const actions = row.querySelector("[class*=actions_]");
-				if (actions) actions.prepend(el);
-				else row.appendChild(el);
-			});
+				self._whenReady(row, (uid) => {
+					if (row.querySelector(".ls-injected[data-type=friend]")) return;
+					const el = self._buildInline(uid);
+					el.dataset.type = "friend";
+					const actions = self._findRowActions(row);
+					if (actions) {
+						actions.prepend(el);
+					} else {
+						self.api.Logger.warn(
+							"LastSeen: Could not find friend row actions — Discord UI may have changed. Wait for a plugin update.",
+						);
+						row.appendChild(el);
+					}
+				});
+			} catch (e) {
+				self.api.Logger.error(
+					"LastSeen: Friend row injection failed — Discord UI may have changed. Wait for a plugin update.",
+					e,
+				);
+			}
 		};
 
 		const handle = (node) => {
 			if (!(node instanceof HTMLElement)) return;
 			const cls = typeof node.className === "string" ? node.className : "";
 
+			// User popout + DM right panel
+			// Primary: role=dialog, Fallback: class wildcards
 			if (
 				node.matches?.("[role=dialog][aria-labelledby]") ||
 				cls.includes("user-profile-popout") ||
@@ -270,6 +313,8 @@ module.exports = class LastSeen {
 			);
 			if (popout) injectPopout(popout);
 
+			// Friends list rows
+			// Primary: role=listitem + data-list-item-id, Fallback: class wildcard
 			if (
 				node.matches?.("[role=listitem][data-list-item-id*=people]") ||
 				cls.includes("peopleListItem_")
