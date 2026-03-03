@@ -246,6 +246,7 @@ module.exports = class LastSeen {
 			if (!(node instanceof HTMLElement)) return;
 			const cls = typeof node.className === "string" ? node.className : "";
 
+			// User popout + DM right panel
 			if (
 				node.matches?.("[role=dialog][aria-labelledby]") ||
 				cls.includes("user-profile-popout") ||
@@ -259,11 +260,17 @@ module.exports = class LastSeen {
 			);
 			if (popout) injectPopout(popout);
 
-			if (cls.includes("peopleListItem_")) {
+			// Friends list rows — also match stable aria attribute
+			if (
+				node.matches?.("[role=listitem][data-list-item-id*=people]") ||
+				cls.includes("peopleListItem_")
+			) {
 				injectFriendRow(node);
 				return;
 			}
-			node.querySelectorAll("[class*=peopleListItem_]").forEach(injectFriendRow);
+			node
+				.querySelectorAll("[role=listitem][data-list-item-id*=people], [class*=peopleListItem_]")
+				.forEach(injectFriendRow);
 		};
 
 		this._observer = new MutationObserver((mutations) => {
@@ -271,6 +278,9 @@ module.exports = class LastSeen {
 		});
 
 		this._observer.observe(document.body, { childList: true, subtree: true });
-		document.querySelectorAll("[class*=peopleListItem_]").forEach(injectFriendRow);
+
+		document
+			.querySelectorAll("[role=listitem][data-list-item-id*=people], [class*=peopleListItem_]")
+			.forEach(injectFriendRow);
 	}
 };
