@@ -2,7 +2,7 @@
  * @name LastSeen
  * @author Sewsho
  * @description Tracks and displays when your friends were last seen.
- * @version 0.9.0
+ * @version 1.0.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/LastSeen/LastSeen.plugin.js
  */
 
@@ -24,9 +24,31 @@ module.exports = class LastSeen {
 		this.RelationshipStore = this.Webpack.getStore("RelationshipStore");
 		this.UserStore = this.Webpack.getStore("UserStore");
 
-		if (!this.PresenceStore || !this.RelationshipStore || !this.UserStore) {
-			this.api.Logger.error("Could not find required Discord stores.");
-			this.UI.showToast("LastSeen: Failed - stores not found.", { type: "error" });
+		if (!this.PresenceStore) {
+			this.api.Logger.error(
+				"PresenceStore not found — Discord may have changed internals. Wait for a plugin update.",
+			);
+			this.UI.showToast("LastSeen: PresenceStore not found. Wait for a plugin update.", {
+				type: "error",
+			});
+			return;
+		}
+		if (!this.RelationshipStore) {
+			this.api.Logger.error(
+				"RelationshipStore not found — Discord may have changed internals. Wait for a plugin update.",
+			);
+			this.UI.showToast("LastSeen: RelationshipStore not found. Wait for a plugin update.", {
+				type: "error",
+			});
+			return;
+		}
+		if (!this.UserStore) {
+			this.api.Logger.error(
+				"UserStore not found — Discord may have changed internals. Wait for a plugin update.",
+			);
+			this.UI.showToast("LastSeen: UserStore not found. Wait for a plugin update.", {
+				type: "error",
+			});
 			return;
 		}
 
@@ -45,7 +67,7 @@ module.exports = class LastSeen {
 			this._observer = null;
 		}
 		this._boundHandler = null;
-		document.querySelectorAll(".ls-injected").forEach((el) => el.remove());
+		document.querySelectorAll(".lo-injected").forEach((el) => el.remove());
 	}
 
 	// ─── Presence Tracking ───────────────────────────────────────────────────
@@ -129,9 +151,9 @@ module.exports = class LastSeen {
 
 	_refreshInjected(userId) {
 		const { label, value } = this._getText(userId);
-		document.querySelectorAll(`.ls-injected[data-uid="${userId}"]`).forEach((el) => {
-			const l = el.querySelector(".ls-label");
-			const v = el.querySelector(".ls-value");
+		document.querySelectorAll(`.lo-injected[data-uid="${userId}"]`).forEach((el) => {
+			const l = el.querySelector(".lo-label");
+			const v = el.querySelector(".lo-value");
 			if (l) l.textContent = label;
 			if (v) v.textContent = value;
 		});
@@ -142,7 +164,7 @@ module.exports = class LastSeen {
 	_buildInline(userId) {
 		const { label, value } = this._getText(userId);
 		const el = document.createElement("span");
-		el.className = "ls-injected";
+		el.className = "lo-injected";
 		el.dataset.uid = userId;
 		el.style.cssText = [
 			"font-size:11px",
@@ -153,14 +175,14 @@ module.exports = class LastSeen {
 			"display:flex",
 			"align-items:center",
 		].join(";");
-		el.innerHTML = `<span class="ls-label" style="color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="color:var(--text-normal);font-weight:600">${value}</span>`;
+		el.innerHTML = `<span class="lo-label" style="color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="lo-value" style="color:var(--text-normal);font-weight:600">${value}</span>`;
 		return el;
 	}
 
 	_buildRow(userId) {
 		const { label, value } = this._getText(userId);
 		const el = document.createElement("div");
-		el.className = "ls-injected";
+		el.className = "lo-injected";
 		el.dataset.uid = userId;
 		el.style.cssText = [
 			"font-size:12px",
@@ -169,7 +191,7 @@ module.exports = class LastSeen {
 			"color:var(--text-muted)",
 			"font-family:var(--font-primary)",
 		].join(";");
-		el.innerHTML = `<span class="ls-label" style="font-size:12px;color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="ls-value" style="font-size:12px;font-weight:600;color:var(--text-normal)">${value}</span>`;
+		el.innerHTML = `<span class="lo-label" style="font-size:12px;color:var(--text-muted)">${label}</span><span style="margin:0 4px;color:var(--text-muted)">·</span><span class="lo-value" style="font-size:12px;font-weight:600;color:var(--text-normal)">${value}</span>`;
 		return el;
 	}
 
@@ -225,6 +247,15 @@ module.exports = class LastSeen {
 		setTimeout(() => obs.disconnect(), 2000);
 	}
 
+	// Returns the node to inject into for the user profile popout/panel,
+	// using stable aria/role attributes as primary selectors with class fallbacks.
+	_findPopoutNode(node) {
+		// Prefer stable accessibility attributes
+		return node.matches("[role=dialog][aria-labelledby]")
+			? node
+			: (node.querySelector("[role=dialog][aria-labelledby]") ?? node);
+	}
+
 	// Returns the insertion anchor inside the popout (below username/pronouns).
 	// Uses stable tag/attribute selectors first, class wildcards as fallback.
 	_findPopoutAnchor(node) {
@@ -238,6 +269,7 @@ module.exports = class LastSeen {
 
 	// Returns the actions container in a friends list row.
 	_findRowActions(row) {
+		// data-list-item-id is stable; actions_ class is a fallback
 		return row.querySelector("[class*=actions_]") ?? null;
 	}
 
@@ -246,9 +278,9 @@ module.exports = class LastSeen {
 
 		const injectPopout = (node) => {
 			try {
-				if (node.querySelector(".ls-injected[data-type=popout]")) return;
+				if (node.querySelector(".lo-injected[data-type=popout]")) return;
 				self._whenReady(node, (uid) => {
-					if (node.querySelector(".ls-injected[data-type=popout]")) return;
+					if (node.querySelector(".lo-injected[data-type=popout]")) return;
 					const badge = self._buildRow(uid);
 					badge.dataset.type = "popout";
 					const anchor = self._findPopoutAnchor(node);
@@ -271,9 +303,9 @@ module.exports = class LastSeen {
 
 		const injectFriendRow = (row) => {
 			try {
-				if (row.querySelector(".ls-injected[data-type=friend]")) return;
+				if (row.querySelector(".lo-injected[data-type=friend]")) return;
 				self._whenReady(row, (uid) => {
-					if (row.querySelector(".ls-injected[data-type=friend]")) return;
+					if (row.querySelector(".lo-injected[data-type=friend]")) return;
 					const el = self._buildInline(uid);
 					el.dataset.type = "friend";
 					const actions = self._findRowActions(row);
@@ -299,7 +331,8 @@ module.exports = class LastSeen {
 			const cls = typeof node.className === "string" ? node.className : "";
 
 			// User popout + DM right panel
-			// Primary: role=dialog, Fallback: class wildcards
+			// Primary: role=dialog (stable aria attribute)
+			// Fallback: class wildcards
 			if (
 				node.matches?.("[role=dialog][aria-labelledby]") ||
 				cls.includes("user-profile-popout") ||
@@ -314,7 +347,8 @@ module.exports = class LastSeen {
 			if (popout) injectPopout(popout);
 
 			// Friends list rows
-			// Primary: role=listitem + data-list-item-id, Fallback: class wildcard
+			// Primary: role=listitem + data-list-item-id containing "people" (stable)
+			// Fallback: peopleListItem_ class wildcard
 			if (
 				node.matches?.("[role=listitem][data-list-item-id*=people]") ||
 				cls.includes("peopleListItem_")
@@ -333,6 +367,7 @@ module.exports = class LastSeen {
 
 		this._observer.observe(document.body, { childList: true, subtree: true });
 
+		// Handle friend rows already on screen at startup
 		document
 			.querySelectorAll("[role=listitem][data-list-item-id*=people], [class*=peopleListItem_]")
 			.forEach(injectFriendRow);
