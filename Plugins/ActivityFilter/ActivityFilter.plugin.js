@@ -1,13 +1,14 @@
 /**
  * @name ActivityFilter
  * @author Sewsho
- * @description Hide activities from your Discord status so other users never see them. Filters are applied directly to outgoing presence updates.
+ * @description Hide activities from your Discord status so other users never see them.
  * @version 2.0.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
 module.exports = (meta) => {
-	const { Data, Webpack, Patcher, UI, Logger } = BdApi;
+	const { Data, Webpack, Patcher, UI, Logger, DOM, React } = BdApi;
+	const { createElement } = React;
 
 	// -- Constants -- //
 
@@ -29,11 +30,11 @@ module.exports = (meta) => {
 				title: "V2 Rewrite",
 				type: "added",
 				items: [
-					"Improved presence filtering through refined protocol interception.",
-					"Added support for real-time status updates when toggling filters.",
-					"Enhanced detection for active activities on startup.",
-					"Refined settings management for better stability across updates.",
-					"Fixed: activities now restore instantly when stopping the plugin.",
+					"Complete overhaul for a more reliable and private experience.",
+					"New 'hidden' badges show you exactly what is being filtered in your status.",
+					"Enhanced privacy: filters are now applied directly to outgoing updates.",
+					"Improved stability and compatibility with the latest Discord updates.",
+					"Refined settings panel that stays organized automatically.",
 				],
 			},
 		],
@@ -60,6 +61,29 @@ module.exports = (meta) => {
 			{ type: "category", id: "competing", name: "Competing", collapsible: true, settings: [] },
 		],
 	};
+
+	// -- Webpack -- //
+	const activityClasses = Webpack.getByKeys(
+		"activityName",
+		"activityDetails",
+		"activityVoiceChannel",
+	);
+
+	const ActivityStatusModule = Webpack.getModule((m) => {
+		if (typeof m !== "object" || !m) return false;
+		for (const v of Object.values(m)) {
+			if (
+				typeof v === "function" &&
+				v.toString().includes("hideTooltip") &&
+				v.toString().includes("iconClassName") &&
+				v.toString().includes("activity") &&
+				!v.toString().includes("stream") &&
+				!v.toString().includes("showChannelName")
+			)
+				return true;
+		}
+		return false;
+	});
 
 	// -- Presence Handler -- //
 
@@ -168,29 +192,89 @@ module.exports = (meta) => {
 
 	function patchPresence() {
 		const handler = getPresenceHandler();
-
 		if (!handler?.socket?.send) {
 			Logger.error(`${meta.name}: Could not find presence handler or socket.`);
 			return;
 		}
 
 		Patcher.before(meta.name, handler.socket, "send", (_, args) => {
-			// args: (opcode, data, requiresSession)
-			if (args[0] !== 3 || !Array.isArray(args[1]?.activities)) return;
-
-			// Clone the data object to avoid mutating Discord's internal state
-			args[1] = {
-				...args[1],
-				activities: filterActivities(args[1].activities),
-			};
+			const payload = /** @type {any} */ (args[1]);
+			if (args[0] !== 3 || !Array.isArray(payload?.activities)) return;
+			args[1] = { ...payload, activities: filterActivities(payload.activities) };
 		});
+	}
 
-		// Logger.info(`${meta.name}: socket.send patched for op 3 filtering.`);
+	function patchActivityStatusRow() {
+		if (!ActivityStatusModule) {
+			Logger.warn(`${meta.name}: ActivityStatusModule not found — hidden badges will not appear.`);
+			return;
+		}
+
+		Patcher.after(meta.name, ActivityStatusModule, "A", (_, [props], ret) => {
+			const activity = (/** @type {any} */ (props))?.activity;
+			if (!activity?.name || !isActivityHidden(activity.type, activity.name)) return;
+
+			return createElement(
+				"span",
+				{ className: "af-activity-wrapper" },
+				ret,
+				createElement("span", { className: "af-hidden-badge" }, "hidden"),
+			);
+		});
 	}
 
 	function forcePresenceUpdate() {
 		const handler = getPresenceHandler();
 		handler?.emitPresenceUpdate?.(handler?.getState?.());
+	}
+
+	// -- Styles -- //
+
+	function injectStyles() {
+		const nameClass = activityClasses?.activityName
+			? `.${activityClasses.activityName}`
+			: "[class*=activityName_]";
+
+		DOM.addStyle(
+			meta.name,
+			`
+			${nameClass} {
+				display: inline-flex;
+				align-items: center;
+			}
+
+			.af-activity-wrapper {
+				display: inline-flex;
+				align-items: center;
+				gap: 4px;
+				max-width: 100%;
+				overflow: visible !important;
+			}
+
+			/* Let the activity content shrink so the badge always has room */
+			.af-activity-wrapper > *:first-child {
+				flex: 1 1 auto;
+				min-width: 0;
+				overflow: hidden;
+			}
+
+			.af-hidden-badge {
+				display: inline-block;
+				flex-shrink: 0;        /* <-- badge never squishes */
+				font-size: 10px;
+				font-weight: 700;
+				letter-spacing: 0.03em;
+				text-transform: uppercase;
+				color: var(--status-danger, #f23f43);
+				background: color-mix(in srgb, var(--status-danger, #f23f43) 12%, transparent);
+				border: 1px solid color-mix(in srgb, var(--status-danger, #f23f43) 30%, transparent);
+				border-radius: 3px;
+				padding: 0 4px;
+				line-height: 14px;
+				cursor: default;
+			}
+		`,
+		);
 	}
 
 	// -- Changelog -- //
@@ -226,7 +310,6 @@ module.exports = (meta) => {
 			?.settings?.find((s) => s.id === settingId);
 		if (setting) setting.value = value;
 		saveSettings();
-
 		forcePresenceUpdate();
 	}
 
@@ -236,7 +319,9 @@ module.exports = (meta) => {
 		start() {
 			loadSettings();
 			showChangelog();
+			injectStyles();
 			patchPresence();
+			patchActivityStatusRow();
 			forcePresenceUpdate();
 
 			Logger.info(`${meta.name} v${meta.version} has started.`);
@@ -246,6 +331,8 @@ module.exports = (meta) => {
 			Patcher.unpatchAll(meta.name);
 			presenceHandler = null;
 			forcePresenceUpdate();
+			DOM.removeStyle(meta.name);
+
 			Logger.info(`${meta.name} v${meta.version} has stopped.`);
 		},
 

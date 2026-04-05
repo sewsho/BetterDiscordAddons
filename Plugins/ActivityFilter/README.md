@@ -1,16 +1,28 @@
-<div align="center">
-
 # ActivityFilter Plugin
+
+<div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 
-## Description
+Hide activities from your Discord status so other users never see them.
 
-Hide specific activities from your Discord status so other users never see them. Filters are applied directly to outgoing presence updates for maximum reliability and privacy.
+</div>
+
+---
+
+## Features
+
+- **Seamless Filtering**: Stays active through restarts and updates without manual intervention.
+- **Auto-Discovery**: New games and apps are automatically detected and categorized for you.
+- **Visual Feedback**: Real-time badges on your status row confirm exactly what's being hidden.
+- **Smart Management**: Settings are automatically sorted by category and visibility for easy control.
+- **True Privacy**: All filtering happens locally before any status data is ever sent to Discord.
 
 ## Preview
 
-![ActivityFilter Preview](https://i.imgur.com/HvgWTaU.png)
+<div align="center">
+
+![ActivityFilter Preview](https://i.imgur.com/u0BZPpn.png)
 
 </div>
 
