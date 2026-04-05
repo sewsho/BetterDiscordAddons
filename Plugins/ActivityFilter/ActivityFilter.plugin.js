@@ -61,14 +61,23 @@ module.exports = (meta) => {
 		],
 	};
 
+	// -- Presence Handler -- //
+
+	let presenceHandler = null;
+
+	function getPresenceHandler() {
+		if (!presenceHandler) {
+			presenceHandler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
+				searchExports: true,
+			});
+		}
+		return presenceHandler;
+	}
+
 	// -- Settings -- //
 
 	function cloneDefaultSettings() {
 		return JSON.parse(JSON.stringify(config.settings));
-	}
-
-	function getSavedSettings() {
-		return Data.load(meta.name, "settings") ?? [];
 	}
 
 	function mergeSettings(saved) {
@@ -100,6 +109,10 @@ module.exports = (meta) => {
 		}
 
 		return defaults;
+	}
+
+	function getSavedSettings() {
+		return Data.load(meta.name, "settings") ?? [];
 	}
 
 	function loadSettings() {
@@ -152,10 +165,9 @@ module.exports = (meta) => {
 	}
 
 	// -- Patching -- //
+
 	function patchPresence() {
-		const handler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
-			searchExports: true,
-		});
+		const handler = getPresenceHandler();
 
 		if (!handler?.socket?.send) {
 			Logger.error(`${meta.name}: Could not find presence handler or socket.`);
@@ -177,9 +189,7 @@ module.exports = (meta) => {
 	}
 
 	function forcePresenceUpdate() {
-		const handler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
-			searchExports: true,
-		});
+		const handler = getPresenceHandler();
 		handler?.emitPresenceUpdate?.(handler?.getState?.());
 	}
 
@@ -227,8 +237,6 @@ module.exports = (meta) => {
 			loadSettings();
 			showChangelog();
 			patchPresence();
-			const current = Webpack.getStore("LocalActivityStore")?.getActivities?.() ?? [];
-			registerNewActivities(current);
 			forcePresenceUpdate();
 
 			Logger.info(`${meta.name} v${meta.version} has started.`);
@@ -236,6 +244,7 @@ module.exports = (meta) => {
 
 		stop() {
 			Patcher.unpatchAll(meta.name);
+			presenceHandler = null;
 			forcePresenceUpdate();
 			Logger.info(`${meta.name} v${meta.version} has stopped.`);
 		},
