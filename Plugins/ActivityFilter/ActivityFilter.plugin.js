@@ -1,220 +1,252 @@
 /**
  * @name ActivityFilter
  * @author Sewsho
- * @description Customize which activities, games, or apps are displayed in your Discord status with advanced filtering and visibility options.
- * @version 1.1.1
+ * @description Hide activities from your Discord status so other users never see them. Filters are applied directly to outgoing presence updates.
+ * @version 2.0.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
 module.exports = (meta) => {
-  // -- Destructure -- //
-  const { Data, Webpack, Patcher, UI } = BdApi;
+	const { Data, Webpack, Patcher, UI, Logger } = BdApi;
 
-  // -- Config -- //
-  const config = {
-    changelog: [
-      {
-        title: 'Improvements',
-        type: 'improved',
-        items: [
-          'Code optimization and cleanup for better performance',
-          'Enhanced error handling for activity settings',
-        ],
-      },
-      {
-        title: 'Bug Fixes',
-        type: 'fixed',
-        items: ['Improved handling of undefined activity states'],
-      },
-      {
-        title: 'On-going',
-        type: 'progress',
-        items: [
-          'Working on profiles: create and select activities for each profile (e.g., "Work" profile for relevant activities)',
-          'Working on reintroducing the activity search functionality',
-        ],
-      },
-    ],
-    settings: [
-      {
-        type: 'category',
-        id: 'settings',
-        name: 'Settings',
-        collapsible: true,
-        settings: [
-          {
-            type: 'switch',
-            id: 'newActivitiesHidden',
-            name: 'Auto Hide',
-            note: 'Automatically hide newly added activities from your activity status.',
-            value: false,
-          },
-        ],
-      },
-      {
-        type: 'category',
-        id: 'playing',
-        name: 'Playing',
-        collapsible: true,
-        settings: [],
-      },
-      {
-        type: 'category',
-        id: 'listening',
-        name: 'Listening',
-        collapsible: true,
-        settings: [],
-      },
-      {
-        type: 'category',
-        id: 'streaming',
-        name: 'Streaming',
-        collapsible: true,
-        settings: [],
-      },
-      {
-        type: 'category',
-        id: 'watching',
-        name: 'Watching',
-        collapsible: true,
-        settings: [],
-      },
-      {
-        type: 'category',
-        id: 'competing',
-        name: 'Competing',
-        collapsible: true,
-        settings: [],
-      },
-    ],
-  };
+	// -- Constants -- //
 
-  // -- Functions -- //
-  function loadSettings() {
-    Object.assign(config.settings, Data.load(meta.name, 'settings'));
-  }
+	const ACTIVITY_TYPES = {
+		0: "playing",
+		1: "streaming",
+		2: "listening",
+		3: "watching",
+		5: "competing",
+	};
 
-  function showChangelog() {
-    const lastVersion = Data.load(meta.name, 'version');
-    if (lastVersion !== meta.version) {
-      UI.showChangelogModal({
-        title: meta.name,
-        subtitle: meta.version,
-        changes: config.changelog,
-      });
-      Data.save(meta.name, 'version', meta.version);
-    }
-  }
+	const ACTIVITY_CATEGORY_IDS = new Set(Object.values(ACTIVITY_TYPES));
 
-  function addNewActivitiesToSettings(activities) {
-    const activityTypes = {
-      0: 'playing',
-      1: 'streaming',
-      2: 'listening',
-      3: 'watching',
-      5: 'competing',
-    };
+	// -- Config -- //
 
-    const getSettingsGroup = (id) => config.settings.find((setting) => setting.id === id)?.settings;
-    const newActivitiesHidden = getSettingsGroup('settings').find(
-      (setting) => setting.id === 'newActivitiesHidden'
-    ).value;
+	const config = {
+		changelog: [
+			{
+				title: "V2 Rewrite",
+				type: "added",
+				items: [
+					"Improved presence filtering through refined protocol interception.",
+					"Added support for real-time status updates when toggling filters.",
+					"Enhanced detection for active activities on startup.",
+					"Refined settings management for better stability across updates.",
+					"Fixed: activities now restore instantly when stopping the plugin.",
+				],
+			},
+		],
+		settings: [
+			{
+				type: "category",
+				id: "settings",
+				name: "Settings",
+				collapsible: true,
+				settings: [
+					{
+						type: "switch",
+						id: "newActivitiesHidden",
+						name: "Auto Hide New Activities",
+						note: "Automatically hide newly detected activities from your status.",
+						value: false,
+					},
+				],
+			},
+			{ type: "category", id: "playing", name: "Playing", collapsible: true, settings: [] },
+			{ type: "category", id: "listening", name: "Listening", collapsible: true, settings: [] },
+			{ type: "category", id: "streaming", name: "Streaming", collapsible: true, settings: [] },
+			{ type: "category", id: "watching", name: "Watching", collapsible: true, settings: [] },
+			{ type: "category", id: "competing", name: "Competing", collapsible: true, settings: [] },
+		],
+	};
 
-    activities.forEach(({ name, type }) => {
-      const categoryId = activityTypes[type];
-      if (!categoryId || !name) return;
+	// -- Settings -- //
 
-      const categorySettings = getSettingsGroup(categoryId);
-      if (!categorySettings.some((setting) => setting.id === name)) {
-        categorySettings.push({
-          type: 'switch',
-          id: name,
-          name: name,
-          value: !newActivitiesHidden,
-        });
-      }
-    });
-  }
+	function cloneDefaultSettings() {
+		return JSON.parse(JSON.stringify(config.settings));
+	}
 
-  function isActivityHidden(activityType, activityName) {
-    const activityTypes = {
-      0: 'playing',
-      1: 'streaming',
-      2: 'listening',
-      3: 'watching',
-      5: 'competing',
-    };
+	function getSavedSettings() {
+		return Data.load(meta.name, "settings") ?? [];
+	}
 
-    const categoryId = activityTypes[activityType];
-    if (!categoryId) return false;
+	function mergeSettings(saved) {
+		const defaults = cloneDefaultSettings();
+		const savedMap = new Map(saved.map((c) => [c.id, c]));
 
-    const categorySettings = config.settings.find((setting) => setting.id === categoryId)?.settings;
-    const activitySetting = categorySettings?.find((setting) => setting.id === activityName);
+		for (const category of defaults) {
+			const savedCategory = savedMap.get(category.id);
+			if (!savedCategory || !Array.isArray(category.settings)) continue;
 
-    return activitySetting?.value === false;
-  }
+			const defaultsMap = new Map(category.settings.map((s) => [s.id, s]));
+			for (const savedSetting of savedCategory.settings ?? []) {
+				const target = defaultsMap.get(savedSetting.id);
+				if (target) target.value = savedSetting.value;
+			}
 
-  function patchSelfPresenceStore() {
-    const selfPresenceStore = Webpack.getByKeys('getLocalPresence', 'getActivities');
+			if (!ACTIVITY_CATEGORY_IDS.has(category.id)) continue;
+			const existingIds = new Set(category.settings.map((s) => s.id));
+			for (const savedSetting of savedCategory.settings ?? []) {
+				if (!savedSetting?.id || existingIds.has(savedSetting.id)) continue;
+				category.settings.push({
+					type: "switch",
+					id: savedSetting.id,
+					name: savedSetting.name ?? savedSetting.id,
+					note: "",
+					value: savedSetting.value !== false,
+				});
+			}
+		}
 
-    BdApi.Patcher.after(meta.name, selfPresenceStore, 'getActivities', (_, args, activities) => {
-      addNewActivitiesToSettings(activities);
-      Data.save(meta.name, 'settings', config.settings);
+		return defaults;
+	}
 
-      return activities.filter(({ name, type }) => !isActivityHidden(type, name));
-    });
-  }
+	function loadSettings() {
+		config.settings = mergeSettings(getSavedSettings());
+	}
 
-  function sortActivitiesSettings() {
-    const activityTypes = ['playing', 'streaming', 'listening', 'watching', 'competing'];
+	function saveSettings() {
+		Data.save(meta.name, "settings", config.settings);
+	}
 
-    activityTypes.forEach((type) => {
-      const settings = config.settings.find((s) => s.id === type)?.settings;
-      if (!settings) return;
+	function getSettingsGroup(id) {
+		return config.settings.find((s) => s.id === id)?.settings ?? [];
+	}
 
-      settings.sort((a, b) =>
-        a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1
-      );
-    });
+	function getSettingValue(groupId, settingId, fallback = false) {
+		return getSettingsGroup(groupId).find((s) => s.id === settingId)?.value ?? fallback;
+	}
 
-    Data.save(meta.name, 'settings', config.settings);
-  }
+	// -- Activity Logic -- //
 
-  function getVisibleCategories() {
-    return config.settings.filter((category) => category.settings.length > 0);
-  }
+	function registerNewActivities(activities) {
+		if (!Array.isArray(activities)) return;
+		const autoHide = getSettingValue("settings", "newActivitiesHidden", false);
+		let changed = false;
 
-  function handleSettingChange(category, id, value) {
-    const setting = config.settings
-      .find((s) => s.id === category)
-      ?.settings?.find((s) => s.id === id);
-    if (setting) setting.value = value;
+		for (const { name, type } of activities) {
+			const categoryId = ACTIVITY_TYPES[type];
+			if (!categoryId || !name) continue;
 
-    Data.save(meta.name, 'settings', config.settings);
-  }
+			const group = getSettingsGroup(categoryId);
+			if (!group.some((s) => s.id === name)) {
+				group.push({ type: "switch", id: name, name, note: "", value: !autoHide });
+				changed = true;
+			}
+		}
 
-  // -- Main -- //
-  return {
-    start: () => {
-      loadSettings();
-      showChangelog();
-      patchSelfPresenceStore();
-    },
+		if (changed) saveSettings();
+	}
 
-    stop: () => {
-      Patcher.unpatchAll(meta.name);
-    },
+	function isActivityHidden(type, name) {
+		const categoryId = ACTIVITY_TYPES[type];
+		if (!categoryId) return false;
+		return getSettingsGroup(categoryId).find((s) => s.id === name)?.value === false;
+	}
 
-    getSettingsPanel: () => {
-      sortActivitiesSettings();
-      const visibleCategories = getVisibleCategories();
+	function filterActivities(activities) {
+		if (!Array.isArray(activities) || activities.length === 0) return activities;
+		registerNewActivities(activities);
+		return activities.filter(({ name, type }) => !isActivityHidden(type, name));
+	}
 
-      return UI.buildSettingsPanel({
-        settings: visibleCategories,
-        onChange: (category, id, value) => {
-          handleSettingChange(category, id, value);
-        },
-      });
-    },
-  };
+	// -- Patching -- //
+	function patchPresence() {
+		const handler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
+			searchExports: true,
+		});
+
+		if (!handler?.socket?.send) {
+			Logger.error(`${meta.name}: Could not find presence handler or socket.`);
+			return;
+		}
+
+		Patcher.before(meta.name, handler.socket, "send", (_, args) => {
+			// args: (opcode, data, requiresSession)
+			if (args[0] !== 3 || !Array.isArray(args[1]?.activities)) return;
+
+			// Clone the data object to avoid mutating Discord's internal state
+			args[1] = {
+				...args[1],
+				activities: filterActivities(args[1].activities),
+			};
+		});
+
+		// Logger.info(`${meta.name}: socket.send patched for op 3 filtering.`);
+	}
+
+	function forcePresenceUpdate() {
+		const handler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
+			searchExports: true,
+		});
+		handler?.emitPresenceUpdate?.(handler?.getState?.());
+	}
+
+	// -- Changelog -- //
+
+	function showChangelog() {
+		const lastVersion = Data.load(meta.name, "version");
+		if (lastVersion !== meta.version) {
+			UI.showChangelogModal({
+				title: meta.name,
+				subtitle: meta.version,
+				changes: /** @type {any} */ (config.changelog),
+			});
+			Data.save(meta.name, "version", meta.version);
+		}
+	}
+
+	// -- Settings Panel -- //
+
+	function sortActivityCategories() {
+		for (const categoryId of ACTIVITY_CATEGORY_IDS) {
+			const settings = config.settings.find((s) => s.id === categoryId)?.settings;
+			if (!settings) return;
+			settings.sort((a, b) =>
+				a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1,
+			);
+		}
+		saveSettings();
+	}
+
+	function handleSettingChange(categoryId, settingId, value) {
+		const setting = config.settings
+			.find((c) => c.id === categoryId)
+			?.settings?.find((s) => s.id === settingId);
+		if (setting) setting.value = value;
+		saveSettings();
+
+		forcePresenceUpdate();
+	}
+
+	// -- Lifecycle -- //
+
+	return {
+		start() {
+			loadSettings();
+			showChangelog();
+			patchPresence();
+			const current = Webpack.getStore("LocalActivityStore")?.getActivities?.() ?? [];
+			registerNewActivities(current);
+			forcePresenceUpdate();
+
+			Logger.info(`${meta.name} v${meta.version} has started.`);
+		},
+
+		stop() {
+			Patcher.unpatchAll(meta.name);
+			forcePresenceUpdate();
+			Logger.info(`${meta.name} v${meta.version} has stopped.`);
+		},
+
+		getSettingsPanel() {
+			sortActivityCategories();
+			const visibleCategories = config.settings.filter((c) => c.settings.length > 0);
+			return UI.buildSettingsPanel({
+				settings: /** @type {any} */ (visibleCategories),
+				onChange: (category, id, value) => handleSettingChange(category, id, value),
+			});
+		},
+	};
 };
