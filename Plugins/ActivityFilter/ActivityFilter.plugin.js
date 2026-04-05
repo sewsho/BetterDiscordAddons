@@ -94,7 +94,7 @@ module.exports = (meta) => {
 					id: savedSetting.id,
 					name: savedSetting.name ?? savedSetting.id,
 					note: "",
-					value: savedSetting.value !== false,
+					value: savedSetting.value ?? true,
 				});
 			}
 		}
@@ -146,7 +146,7 @@ module.exports = (meta) => {
 	}
 
 	function filterActivities(activities) {
-		if (!Array.isArray(activities) || activities.length === 0) return activities;
+		if (!Array.isArray(activities)) return activities;
 		registerNewActivities(activities);
 		return activities.filter(({ name, type }) => !isActivityHidden(type, name));
 	}
@@ -202,7 +202,7 @@ module.exports = (meta) => {
 	function sortActivityCategories() {
 		for (const categoryId of ACTIVITY_CATEGORY_IDS) {
 			const settings = config.settings.find((s) => s.id === categoryId)?.settings;
-			if (!settings) return;
+			if (!settings) continue;
 			settings.sort((a, b) =>
 				a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1,
 			);
