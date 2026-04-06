@@ -2,7 +2,7 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.0.0
+ * @version 2.0.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
@@ -26,6 +26,14 @@ module.exports = (meta) => {
 
 	const config = {
 		changelog: [
+			{
+				title: "Bug Fixes",
+				type: "fixed",
+				items: [
+					"Fixed badges incorrectly showing on other people's statuses when they were playing a game you had hidden.",
+					"Fixed layout issues where badges could occasionally cause text overflow in the user list.",
+				],
+			},
 			{
 				title: "V2 Rewrite",
 				type: "added",
@@ -69,20 +77,17 @@ module.exports = (meta) => {
 		"activityVoiceChannel",
 	);
 
+	const activityStatusFilter = (v) =>
+		typeof v === "function" &&
+		v.toString().includes("hideTooltip") &&
+		v.toString().includes("iconClassName") &&
+		v.toString().includes("activity") &&
+		!v.toString().includes("stream") &&
+		!v.toString().includes("showChannelName");
+
 	const ActivityStatusModule = Webpack.getModule((m) => {
 		if (typeof m !== "object" || !m) return false;
-		for (const v of Object.values(m)) {
-			if (
-				typeof v === "function" &&
-				v.toString().includes("hideTooltip") &&
-				v.toString().includes("iconClassName") &&
-				v.toString().includes("activity") &&
-				!v.toString().includes("stream") &&
-				!v.toString().includes("showChannelName")
-			)
-				return true;
-		}
-		return false;
+		return Object.values(m).some(activityStatusFilter);
 	});
 
 	// -- Presence Handler -- //
@@ -210,9 +215,35 @@ module.exports = (meta) => {
 			return;
 		}
 
+		const UserStore = Webpack.getStore("UserStore") || Webpack.getModule((m) => m?.getCurrentUser);
+		const PresenceStore =
+			Webpack.getStore("PresenceStore") ||
+			Webpack.getModule((m) => m?.getActivities && m?.getState);
+
 		Patcher.after(meta.name, ActivityStatusModule, "A", (_, [props], ret) => {
-			const activity = (/** @type {any} */ (props))?.activity;
+			const activity = /** @type {any} */ (props)?.activity;
 			if (!activity?.name || !isActivityHidden(activity.type, activity.name)) return;
+
+			const currentUser = UserStore?.getCurrentUser?.();
+			if (currentUser && PresenceStore) {
+				const myActivities = PresenceStore.getActivities(currentUser.id) || [];
+
+				const isMine = myActivities.some((myAct) => {
+					if (myAct.name !== activity.name || myAct.type !== activity.type) return false;
+
+					if (myAct.session_id && activity.session_id)
+						return myAct.session_id === activity.session_id;
+
+					if (myAct.sync_id && activity.sync_id) return myAct.sync_id === activity.sync_id;
+
+					if (myAct.created_at && activity.created_at)
+						return myAct.created_at == activity.created_at;
+
+					return myAct.details === activity.details && myAct.state === activity.state;
+				});
+
+				if (!isMine) return;
+			}
 
 			return createElement(
 				"span",
