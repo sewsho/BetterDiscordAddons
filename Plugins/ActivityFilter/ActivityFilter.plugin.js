@@ -2,7 +2,7 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.0.1
+ * @version 2.0.2
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
@@ -27,7 +27,15 @@ module.exports = (meta) => {
 	const config = {
 		changelog: [
 			{
-				title: "Bug Fixes",
+				title: "Performance & Stability | v2.0.2",
+				type: "improved",
+				items: [
+					"Improved stability: 'Hidden' badges are now more reliable and less likely to break after Discord updates.",
+					"Better performance: Optimized how the plugin handles status updates for a smoother, faster experience.",
+				],
+			},
+			{
+				title: "Bug Fixes | v2.0.1",
 				type: "fixed",
 				items: [
 					"Fixed badges incorrectly showing on other people's statuses when they were playing a game you had hidden.",
@@ -35,7 +43,7 @@ module.exports = (meta) => {
 				],
 			},
 			{
-				title: "V2 Rewrite",
+				title: "V2 Rewrite | v2.0.0",
 				type: "added",
 				items: [
 					"Complete overhaul for a more reliable and private experience.",
@@ -215,30 +223,38 @@ module.exports = (meta) => {
 			return;
 		}
 
+		const key = Object.keys(ActivityStatusModule).find((k) =>
+			activityStatusFilter(ActivityStatusModule[k]),
+		);
+
+		if (!key) {
+			Logger.warn(
+				`${meta.name}: Could not resolve ActivityStatusModule export key — hidden badges will not appear.`,
+			);
+			return;
+		}
+
 		const UserStore = Webpack.getStore("UserStore") || Webpack.getModule((m) => m?.getCurrentUser);
 		const PresenceStore =
 			Webpack.getStore("PresenceStore") ||
 			Webpack.getModule((m) => m?.getActivities && m?.getState);
 
-		Patcher.after(meta.name, ActivityStatusModule, "A", (_, [props], ret) => {
+		const currentUser = UserStore?.getCurrentUser?.();
+
+		Patcher.after(meta.name, ActivityStatusModule, key, (_, [props], ret) => {
 			const activity = /** @type {any} */ (props)?.activity;
 			if (!activity?.name || !isActivityHidden(activity.type, activity.name)) return;
 
-			const currentUser = UserStore?.getCurrentUser?.();
 			if (currentUser && PresenceStore) {
 				const myActivities = PresenceStore.getActivities(currentUser.id) || [];
 
 				const isMine = myActivities.some((myAct) => {
 					if (myAct.name !== activity.name || myAct.type !== activity.type) return false;
-
 					if (myAct.session_id && activity.session_id)
 						return myAct.session_id === activity.session_id;
-
 					if (myAct.sync_id && activity.sync_id) return myAct.sync_id === activity.sync_id;
-
 					if (myAct.created_at && activity.created_at)
 						return myAct.created_at == activity.created_at;
-
 					return myAct.details === activity.details && myAct.state === activity.state;
 				});
 
@@ -282,7 +298,6 @@ module.exports = (meta) => {
 				overflow: visible !important;
 			}
 
-			/* Let the activity content shrink so the badge always has room */
 			.af-activity-wrapper > *:first-child {
 				flex: 1 1 auto;
 				min-width: 0;
@@ -291,7 +306,7 @@ module.exports = (meta) => {
 
 			.af-hidden-badge {
 				display: inline-block;
-				flex-shrink: 0;        /* <-- badge never squishes */
+				flex-shrink: 0;
 				font-size: 10px;
 				font-weight: 700;
 				letter-spacing: 0.03em;
