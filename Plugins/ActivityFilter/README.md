@@ -37,9 +37,7 @@ Hide specific activities from your Discord status so other users never see them.
 1. **Open Settings**: Navigate to the BetterDiscord settings and find the ActivityFilter plugin.
 2. **Select Activities**: Toggle the switches next to activities, games, or apps to show or hide them in your status.
 3. **Apply Changes**: Click "Done" to save your preferences.
-4. **Check Status**: Open Discord to ensure your selected activities are displayed.
-
-You can update your activity visibility settings anytime through the plugin settings.
+4. **Check Status**: Confirm your status row shows the activities you expect.
 
 ## Support
 

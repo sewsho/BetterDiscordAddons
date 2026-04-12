@@ -23,8 +23,7 @@ Unlock Listen Along for Spotify in Discord without a Spotify Premium subscriptio
 ## Usage
 
 1. **Link Spotify**: Make sure your Spotify account is connected in Discord.
-2. **Enable the plugin**: Enable the SpotifyListenAlong plugin in the BetterDiscord settings.
-3. **Use Listen Along**: Just right-click a friend who's listening to Spotify and pick "Listen Along".
+2. **Listen Along**: Right-click a friend who is listening to Spotify and choose Listen Along.
 
 ## Support
 
