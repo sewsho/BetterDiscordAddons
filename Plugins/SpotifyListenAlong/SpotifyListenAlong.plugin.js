@@ -3,6 +3,7 @@
  * @author Sewsho
  * @description Unlocks the Listen Along feature for Spotify without needing Premium.
  * @version 1.0.0
+ * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/SpotifyListenAlong/SpotifyListenAlong.plugin.js
  */
 
 module.exports = (meta) => {
