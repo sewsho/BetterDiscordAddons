@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)
 
 Hide specific activities from your Discord status so other users never see them.
 
@@ -14,7 +14,7 @@ Hide specific activities from your Discord status so other users never see them.
 
 - **Seamless Filtering**: Stays active through restarts and updates without manual intervention.
 - **Auto-Discovery**: New games and apps are automatically detected and categorized for you.
-- **Visual Feedback**: Real-time badges on your status row confirm exactly what's being hidden.
+- **Clean Interface**: Filtered activities are hidden from your own view to match the native Discord experience.
 - **Smart Management**: Settings are automatically sorted by category and visibility for easy control.
 - **True Privacy**: All filtering happens locally before any status data is ever sent to Discord.
 
