@@ -25,7 +25,7 @@ body:
     attributes:
       label: Did this start after a Discord update?
       options:
-        - label: Yes
+        - label: Yes, this started after a recent Discord update
 
   - type: textarea
     id: console-errors
