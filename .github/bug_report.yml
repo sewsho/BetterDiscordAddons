@@ -1,0 +1,35 @@
+name: Bug Report
+description: Something isn't working.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Which plugin?
+      options:
+        - ActivityFilter
+        - SpotifyListenAlong
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What's the issue?
+      placeholder: Describe what's happening and what you expected instead.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: discord-update
+    attributes:
+      label: Did this start after a Discord update?
+      options:
+        - label: Yes
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Any errors in console?
+      description: Open DevTools with Ctrl+Shift+I → Console tab. Paste any red errors here if there are any.
+      render: shell
