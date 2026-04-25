@@ -2,13 +2,12 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.0.2
+ * @version 2.0.3
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
 module.exports = (meta) => {
-	const { Data, Webpack, Patcher, UI, Logger, DOM, React } = BdApi;
-	const { createElement } = React;
+	const { Data, Webpack, Patcher, UI, Logger } = BdApi;
 
 	// -- Constants -- //
 
@@ -27,30 +26,12 @@ module.exports = (meta) => {
 	const config = {
 		changelog: [
 			{
-				title: "Performance & Stability | v2.0.2",
+				title: "Stability Update | v2.0.3",
 				type: "improved",
 				items: [
-					"Improved stability: 'Hidden' badges are now more reliable and less likely to break after Discord updates.",
-					"Better performance: Optimized how the plugin handles status updates for a smoother, faster experience.",
-				],
-			},
-			{
-				title: "Bug Fixes | v2.0.1",
-				type: "fixed",
-				items: [
-					"Fixed badges incorrectly showing on other people's statuses when they were playing a game you had hidden.",
-					"Fixed layout issues where badges could occasionally cause text overflow in the user list.",
-				],
-			},
-			{
-				title: "V2 Rewrite | v2.0.0",
-				type: "added",
-				items: [
-					"Complete overhaul for a more reliable and private experience.",
-					"New 'hidden' badges show you exactly what is being filtered in your status.",
-					"Enhanced privacy: filters are now applied directly to outgoing updates.",
-					"Improved stability and compatibility with the latest Discord updates.",
-					"Refined settings panel that stays organized automatically.",
+					"Fixed an issue where some activities were failing to hide due to recent Discord updates.",
+					"Improved reliability to ensure your status stays private even after Discord updates.",
+					"Filtered activities are now completely hidden from your own view as well for a cleaner, distraction-free experience.",
 				],
 			},
 		],
@@ -77,39 +58,6 @@ module.exports = (meta) => {
 			{ type: "category", id: "competing", name: "Competing", collapsible: true, settings: [] },
 		],
 	};
-
-	// -- Webpack -- //
-	const activityClasses = Webpack.getByKeys(
-		"activityName",
-		"activityDetails",
-		"activityVoiceChannel",
-	);
-
-	const activityStatusFilter = (v) =>
-		typeof v === "function" &&
-		v.toString().includes("hideTooltip") &&
-		v.toString().includes("iconClassName") &&
-		v.toString().includes("activity") &&
-		!v.toString().includes("stream") &&
-		!v.toString().includes("showChannelName");
-
-	const ActivityStatusModule = Webpack.getModule((m) => {
-		if (typeof m !== "object" || !m) return false;
-		return Object.values(m).some(activityStatusFilter);
-	});
-
-	// -- Presence Handler -- //
-
-	let presenceHandler = null;
-
-	function getPresenceHandler() {
-		if (!presenceHandler) {
-			presenceHandler = Webpack.getModule((m) => m?.emitPresenceUpdate && m?.socket, {
-				searchExports: true,
-			});
-		}
-		return presenceHandler;
-	}
 
 	// -- Settings -- //
 
@@ -203,124 +151,33 @@ module.exports = (meta) => {
 
 	// -- Patching -- //
 
-	function patchPresence() {
-		const handler = getPresenceHandler();
-		if (!handler?.socket?.send) {
-			Logger.error(`${meta.name}: Could not find presence handler or socket.`);
+	function patchLocalActivityStore() {
+		const LocalActivityStore = Webpack.getStore("LocalActivityStore");
+
+		if (!LocalActivityStore) {
+			Logger.error(`${meta.name}: Could not find LocalActivityStore.`);
 			return;
 		}
 
-		Patcher.before(meta.name, handler.socket, "send", (_, args) => {
-			const payload = /** @type {any} */ (args[1]);
-			if (args[0] !== 3 || !Array.isArray(payload?.activities)) return;
-			args[1] = { ...payload, activities: filterActivities(payload.activities) };
+		Patcher.after(meta.name, LocalActivityStore, "getActivities", (_, __, ret) => {
+			if (!Array.isArray(ret)) return;
+			return filterActivities(ret);
 		});
+
+		Logger.info(`${meta.name}: LocalActivityStore patched successfully.`);
 	}
 
-	function patchActivityStatusRow() {
-		if (!ActivityStatusModule) {
-			Logger.warn(`${meta.name}: ActivityStatusModule not found — hidden badges will not appear.`);
-			return;
-		}
-
-		const key = Object.keys(ActivityStatusModule).find((k) =>
-			activityStatusFilter(ActivityStatusModule[k]),
-		);
-
-		if (!key) {
-			Logger.warn(
-				`${meta.name}: Could not resolve ActivityStatusModule export key — hidden badges will not appear.`,
-			);
-			return;
-		}
-
-		const UserStore = Webpack.getStore("UserStore") || Webpack.getModule((m) => m?.getCurrentUser);
-		const PresenceStore =
-			Webpack.getStore("PresenceStore") ||
-			Webpack.getModule((m) => m?.getActivities && m?.getState);
-
-		const currentUser = UserStore?.getCurrentUser?.();
-
-		Patcher.after(meta.name, ActivityStatusModule, key, (_, [props], ret) => {
-			const activity = /** @type {any} */ (props)?.activity;
-			if (!activity?.name || !isActivityHidden(activity.type, activity.name)) return;
-
-			if (currentUser && PresenceStore) {
-				const myActivities = PresenceStore.getActivities(currentUser.id) || [];
-
-				const isMine = myActivities.some((myAct) => {
-					if (myAct.name !== activity.name || myAct.type !== activity.type) return false;
-					if (myAct.session_id && activity.session_id)
-						return myAct.session_id === activity.session_id;
-					if (myAct.sync_id && activity.sync_id) return myAct.sync_id === activity.sync_id;
-					if (myAct.created_at && activity.created_at)
-						return myAct.created_at == activity.created_at;
-					return myAct.details === activity.details && myAct.state === activity.state;
-				});
-
-				if (!isMine) return;
-			}
-
-			return createElement(
-				"span",
-				{ className: "af-activity-wrapper" },
-				ret,
-				createElement("span", { className: "af-hidden-badge" }, "hidden"),
-			);
-		});
-	}
+	// -- Force Update -- //
 
 	function forcePresenceUpdate() {
-		const handler = getPresenceHandler();
-		handler?.emitPresenceUpdate?.(handler?.getState?.());
-	}
-
-	// -- Styles -- //
-
-	function injectStyles() {
-		const nameClass = activityClasses?.activityName
-			? `.${activityClasses.activityName}`
-			: "[class*=activityName_]";
-
-		DOM.addStyle(
-			meta.name,
-			`
-			${nameClass} {
-				display: inline-flex;
-				align-items: center;
-			}
-
-			.af-activity-wrapper {
-				display: inline-flex;
-				align-items: center;
-				gap: 4px;
-				max-width: 100%;
-				overflow: visible !important;
-			}
-
-			.af-activity-wrapper > *:first-child {
-				flex: 1 1 auto;
-				min-width: 0;
-				overflow: hidden;
-			}
-
-			.af-hidden-badge {
-				display: inline-block;
-				flex-shrink: 0;
-				font-size: 10px;
-				font-weight: 700;
-				letter-spacing: 0.03em;
-				text-transform: uppercase;
-				color: var(--status-danger, #f23f43);
-				background: color-mix(in srgb, var(--status-danger, #f23f43) 12%, transparent);
-				border: 1px solid color-mix(in srgb, var(--status-danger, #f23f43) 30%, transparent);
-				border-radius: 3px;
-				padding: 0 4px;
-				line-height: 14px;
-				cursor: default;
-			}
-		`,
-		);
+		const LocalActivityStore = Webpack.getStore("LocalActivityStore");
+		if (!LocalActivityStore) return;
+		try {
+			LocalActivityStore.emitChange?.();
+			LocalActivityStore.doEmitChanges?.();
+		} catch (e) {
+			Logger.warn(`${meta.name}: forcePresenceUpdate failed: ${e}`);
+		}
 	}
 
 	// -- Changelog -- //
@@ -365,21 +222,17 @@ module.exports = (meta) => {
 		start() {
 			loadSettings();
 			showChangelog();
-			injectStyles();
-			patchPresence();
-			patchActivityStatusRow();
+			patchLocalActivityStore();
 			forcePresenceUpdate();
 
-			Logger.info(`${meta.name} v${meta.version} has started.`);
+			Logger.info(`${meta.name} v${meta.version} has started successfully.`);
 		},
 
 		stop() {
 			Patcher.unpatchAll(meta.name);
-			presenceHandler = null;
 			forcePresenceUpdate();
-			DOM.removeStyle(meta.name);
 
-			Logger.info(`${meta.name} v${meta.version} has stopped.`);
+			Logger.info(`${meta.name} v${meta.version} has stopped successfully.`);
 		},
 
 		getSettingsPanel() {
