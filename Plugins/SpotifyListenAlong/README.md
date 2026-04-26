@@ -1,5 +1,6 @@
 # SpotifyListenAlong Plugin
 
+<!-- markdownlint-disable MD033 -->
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
@@ -7,6 +8,7 @@
 Unlock Listen Along for Spotify in Discord without a Spotify Premium subscription.
 
 </div>
+<!-- markdownlint-enable MD033 -->
 
 ---
 
@@ -16,7 +18,7 @@ Unlock Listen Along for Spotify in Discord without a Spotify Premium subscriptio
 
 ## Installation
 
-1. Download the `SpotifyListenAlong.plugin.js`.
+1. Download the [SpotifyListenAlong.plugin.js](SpotifyListenAlong.plugin.js).
 2. Place the `SpotifyListenAlong.plugin.js` file into your BetterDiscord plugins folder.
 3. Enable the plugin through the BetterDiscord settings.
 
