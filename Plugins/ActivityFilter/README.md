@@ -33,7 +33,7 @@ Hide specific activities from your Discord status so other users never see them.
 
 ## Installation
 
-1. Download the [ActivityFilter.plugin.js](ActivityFilter.plugin.js).
+1. Download the [ActivityFilter.plugin.js](https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js).
 2. Place the `ActivityFilter.plugin.js` file into your BetterDiscord plugins folder.
 3. Enable the plugin through the BetterDiscord settings.
 
