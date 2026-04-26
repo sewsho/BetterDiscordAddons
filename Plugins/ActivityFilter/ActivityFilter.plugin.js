@@ -2,12 +2,12 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.0.3
+ * @version 2.1.0
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
 module.exports = (meta) => {
-	const { Data, Webpack, Patcher, UI, Logger } = BdApi;
+	const { Data, Webpack, Patcher, UI, Logger, React } = BdApi;
 
 	// -- Constants -- //
 
@@ -26,12 +26,11 @@ module.exports = (meta) => {
 	const config = {
 		changelog: [
 			{
-				title: "Stability Update | v2.0.3",
-				type: "improved",
+				title: "Search Update | v2.1.0",
+				type: "added",
 				items: [
-					"Fixed an issue where some activities were failing to hide due to recent Discord updates.",
-					"Improved reliability to ensure your status stays private even after Discord updates.",
-					"Filtered activities are now completely hidden from your own view as well for a cleaner, distraction-free experience.",
+					"Activity categories now start collapsed by default, preventing the settings panel from becoming overwhelming.",
+					"Added a search bar to the settings panel to instantly filter your activity list by name.",
 				],
 			},
 		],
@@ -51,11 +50,11 @@ module.exports = (meta) => {
 					},
 				],
 			},
-			{ type: "category", id: "playing", name: "Playing", collapsible: true, settings: [] },
-			{ type: "category", id: "listening", name: "Listening", collapsible: true, settings: [] },
-			{ type: "category", id: "streaming", name: "Streaming", collapsible: true, settings: [] },
-			{ type: "category", id: "watching", name: "Watching", collapsible: true, settings: [] },
-			{ type: "category", id: "competing", name: "Competing", collapsible: true, settings: [] },
+			{ type: "category", id: "playing", name: "Playing", collapsible: true, shown: false, settings: [] },
+			{ type: "category", id: "listening", name: "Listening", collapsible: true, shown: false, settings: [] },
+			{ type: "category", id: "streaming", name: "Streaming", collapsible: true, shown: false, settings: [] },
+			{ type: "category", id: "watching", name: "Watching", collapsible: true, shown: false, settings: [] },
+			{ type: "category", id: "competing", name: "Competing", collapsible: true, shown: false, settings: [] },
 		],
 	};
 
@@ -188,7 +187,7 @@ module.exports = (meta) => {
 			UI.showChangelogModal({
 				title: meta.name,
 				subtitle: meta.version,
-				changes: /** @type {any} */ (config.changelog),
+				changes: config.changelog,
 			});
 			Data.save(meta.name, "version", meta.version);
 		}
@@ -200,9 +199,7 @@ module.exports = (meta) => {
 		for (const categoryId of ACTIVITY_CATEGORY_IDS) {
 			const settings = config.settings.find((s) => s.id === categoryId)?.settings;
 			if (!settings) continue;
-			settings.sort((a, b) =>
-				a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1,
-			);
+			settings.sort((a, b) => (a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1));
 		}
 		saveSettings();
 	}
@@ -214,6 +211,62 @@ module.exports = (meta) => {
 		if (setting) setting.value = value;
 		saveSettings();
 		forcePresenceUpdate();
+	}
+
+	function buildFilteredSettings(term) {
+		const normalised = term.toLowerCase().trim();
+
+		return config.settings
+			.map((category) => {
+				if (!ACTIVITY_CATEGORY_IDS.has(category.id)) return category;
+
+				if (!normalised) {
+					return category.settings.length > 0 ? category : null;
+				}
+
+				const matched = category.settings.filter((s) => s.name.toLowerCase().includes(normalised));
+
+				if (!matched.length) return null;
+
+				return { ...category, settings: matched, shown: true };
+			})
+			.filter(Boolean);
+	}
+
+	// -- Search Bar Component -- //
+
+	function SearchableSettingsPanel() {
+		const [search, setSearch] = React.useState("");
+
+		const term = search.trim();
+
+		const visibleSettings = React.useMemo(() => buildFilteredSettings(search), [search]);
+
+		const hasActivityCategories = visibleSettings.some((c) => ACTIVITY_CATEGORY_IDS.has(c.id));
+
+		const searchNote =
+			term && !hasActivityCategories ? `No activities match "${term}".` : "Filter the activity list by name.";
+
+		const searchItem = UI.buildSettingItem({
+			type: "text",
+			id: "activitySearch",
+			name: "Search Activities",
+			note: searchNote,
+			value: search,
+			placeholder: "e.g. Spotify, VSCode…",
+			onChange: (value) => setSearch(value),
+		});
+
+		const panel = React.createElement(
+			"div",
+			{ key: term },
+			UI.buildSettingsPanel({
+				settings: visibleSettings,
+				onChange: (category, id, value) => handleSettingChange(category, id, value),
+			}),
+		);
+
+		return React.createElement("div", null, searchItem, panel);
 	}
 
 	// -- Lifecycle -- //
@@ -237,11 +290,7 @@ module.exports = (meta) => {
 
 		getSettingsPanel() {
 			sortActivityCategories();
-			const visibleCategories = config.settings.filter((c) => c.settings.length > 0);
-			return UI.buildSettingsPanel({
-				settings: /** @type {any} */ (visibleCategories),
-				onChange: (category, id, value) => handleSettingChange(category, id, value),
-			});
+			return React.createElement(SearchableSettingsPanel);
 		},
 	};
 };
