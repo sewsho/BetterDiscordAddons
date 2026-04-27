@@ -2,7 +2,7 @@
  * @name SpotifyListenAlong
  * @author Sewsho
  * @description Unlocks the Listen Along feature for Spotify without needing Premium.
- * @version 1.0.0
+ * @version 1.0.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/SpotifyListenAlong/SpotifyListenAlong.plugin.js
  */
 
@@ -13,6 +13,11 @@ module.exports = (meta) => {
 
 	const config = {
 		changelog: [
+			{
+				title: "Maintenance Update | v1.0.1",
+				type: "improved",
+				items: ["Improved stability and reliability under the hood."],
+			},
 			{
 				title: "Initial Release",
 				type: "added",
@@ -29,7 +34,7 @@ module.exports = (meta) => {
 			UI.showChangelogModal({
 				title: meta.name,
 				subtitle: meta.version,
-				changes: /** @type {any} */ (config.changelog),
+				changes: config.changelog,
 			});
 			Data.save(meta.name, "version", meta.version);
 		}
@@ -38,36 +43,30 @@ module.exports = (meta) => {
 	// -- Patching -- //
 
 	function patchSpotify() {
-		if (SpotifyStore) {
-			Patcher.after(
-				"SpotifyListenAlong",
-				SpotifyStore,
-				"getActiveSocketAndDevice",
-				(_, args, res) => {
-					if (res?.socket) {
-						res.socket.isPremium = true;
-					}
-					return res;
-				},
-			);
-		} else {
+		const SpotifyStore = Webpack.getModule((m) => m.getActiveSocketAndDevice);
+
+		if (!SpotifyStore) {
 			Logger.error(`${meta.name}: Could not find SpotifyStore module.`);
+			return false;
 		}
+
+		Patcher.after(meta.name, SpotifyStore, "getActiveSocketAndDevice", (_, args, res) => {
+			if (res?.socket) res.socket.isPremium = true;
+		});
+
+		return true;
 	}
-
-	// -- Webpack -- //
-
-	const SpotifyStore = Webpack.getModule((m) => m.getActiveSocketAndDevice);
 
 	// -- Lifecycle -- //
 
 	return {
 		start() {
 			showChangelog();
-			patchSpotify();
+			if (patchSpotify()) Logger.info(`${meta.name} v${meta.version} has started successfully.`);
 		},
-		stop: () => {
-			Patcher.unpatchAll("SpotifyListenAlong");
+		stop() {
+			Patcher.unpatchAll(meta.name);
+			Logger.info(`${meta.name} v${meta.version} has stopped successfully.`);
 		},
 	};
 };
