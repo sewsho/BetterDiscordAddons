@@ -2,7 +2,7 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.1.0
+ * @version 2.1.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
@@ -25,6 +25,11 @@ module.exports = (meta) => {
 
 	const config = {
 		changelog: [
+			{
+				title: "Sorting Fix | v2.1.1",
+				type: "fixed",
+				items: ["Hidden activities now show at the top of the list."],
+			},
 			{
 				title: "Search Update | v2.1.0",
 				type: "added",
@@ -199,7 +204,7 @@ module.exports = (meta) => {
 		for (const categoryId of ACTIVITY_CATEGORY_IDS) {
 			const settings = config.settings.find((s) => s.id === categoryId)?.settings;
 			if (!settings) continue;
-			settings.sort((a, b) => (a.value === b.value ? a.name.localeCompare(b.name) : a.value ? 1 : -1));
+			settings.sort((a, b) => (a.value === b.value ? a.name.localeCompare(b.name) : a.value ? -1 : 1));
 		}
 		saveSettings();
 	}
