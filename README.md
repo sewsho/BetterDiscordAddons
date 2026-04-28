@@ -29,7 +29,6 @@ This repository contains custom BetterDiscord plugins designed to enhance your D
 
 - These plugins are provided **as-is** under the [MIT License](LICENSE).
 - Compatibility with future Discord updates is not guaranteed.
-- All filtering and modifications happen locally on your client.
 
 ## 🛠️ Issues & Requests
 
