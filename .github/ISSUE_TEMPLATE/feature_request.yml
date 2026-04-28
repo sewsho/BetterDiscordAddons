@@ -9,6 +9,7 @@ body:
       options:
         - ActivityFilter
         - SpotifyListenAlong
+        - SpotifyTitleDisplay
     validations:
       required: true
 
