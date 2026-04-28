@@ -21,7 +21,7 @@ Shows the song title instead of the artist name on Spotify statuses.
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![SpotifyTitleDisplay Preview](https://i.imgur.com/9YbIAwV.png)
+![SpotifyTitleDisplay Preview](https://i.imgur.com/VSJmeQ9.png)
 
 </div>
 <!-- markdownlint-enable MD033 -->
