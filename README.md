@@ -7,10 +7,10 @@ This repository contains custom BetterDiscord plugins designed to enhance your D
 ## 📁 Available Plugins
 
 | Plugin | Description | Links |
-| :--- | :--- | :--- |
-| **ActivityFilter** | Hide specific activities from your status so other users never see them. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/ActivityFilter/README.md) [![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/ActivityFilter/ActivityFilter.plugin.js) |
-| **SpotifyListenAlong** | Unlock Listen Along for Spotify in Discord without a Spotify Premium subscription. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyListenAlong/README.md) [![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyListenAlong/SpotifyListenAlong.plugin.js) |
-| **SpotifyTitleDisplay** | Shows the song title instead of the artist name on Spotify statuses. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyTitleDisplay/README.md) [![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyTitleDisplay/SpotifyTitleDisplay.plugin.js) |
+| :--- | :--- | :---: |
+| **ActivityFilter** | Hide specific activities from your status so other users never see them. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/ActivityFilter/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/ActivityFilter/ActivityFilter.plugin.js) |
+| **SpotifyListenAlong** | Unlock Listen Along for Spotify in Discord without a Spotify Premium subscription. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyListenAlong/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyListenAlong/SpotifyListenAlong.plugin.js) |
+| **SpotifyTitleDisplay** | Shows the song title instead of the artist name on Spotify statuses. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyTitleDisplay/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyTitleDisplay/SpotifyTitleDisplay.plugin.js) |
 
 ---
 
