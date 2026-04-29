@@ -3,9 +3,9 @@
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 
-Shows the song title instead of the artist name on Spotify statuses.
+Replaces the artist name with the song title on Spotify statuses, with an optional setting to show both.
 
 </div>
 <!-- markdownlint-enable MD033 -->
@@ -15,6 +15,7 @@ Shows the song title instead of the artist name on Spotify statuses.
 ## Features
 
 - **Prioritize Titles**: Always see the song title first in Spotify statuses across Discord.
+- **Customizable Display**: Choose whether to include the artist name after the song title in the plugin settings.
 
 ## Preview
 
