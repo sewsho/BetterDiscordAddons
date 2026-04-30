@@ -3,7 +3,7 @@
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.2-blue.svg)
 
 Hide specific activities from your Discord status so other users never see them.
 

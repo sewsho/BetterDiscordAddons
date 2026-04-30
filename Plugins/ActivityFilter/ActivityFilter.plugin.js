@@ -2,7 +2,7 @@
  * @name ActivityFilter
  * @author Sewsho
  * @description Hide activities from your Discord status so other users never see them.
- * @version 2.1.1
+ * @version 2.1.2
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/ActivityFilter/ActivityFilter.plugin.js
  */
 
@@ -25,6 +25,11 @@ module.exports = (meta) => {
 
 	const config = {
 		changelog: [
+			{
+				title: "Maintenance Update | v2.1.2",
+				type: "improved",
+				items: ["Improved startup error handling and notifications."],
+			},
 			{
 				title: "Sorting Fix | v2.1.1",
 				type: "fixed",
@@ -160,7 +165,7 @@ module.exports = (meta) => {
 
 		if (!LocalActivityStore) {
 			Logger.error(`${meta.name}: Could not find LocalActivityStore.`);
-			return;
+			return false;
 		}
 
 		Patcher.after(meta.name, LocalActivityStore, "getActivities", (_, __, ret) => {
@@ -169,6 +174,7 @@ module.exports = (meta) => {
 		});
 
 		Logger.info(`${meta.name}: LocalActivityStore patched successfully.`);
+		return true;
 	}
 
 	// -- Force Update -- //
@@ -280,10 +286,16 @@ module.exports = (meta) => {
 		start() {
 			loadSettings();
 			showChangelog();
-			patchLocalActivityStore();
-			forcePresenceUpdate();
 
-			Logger.info(`${meta.name} v${meta.version} has started successfully.`);
+			if (patchLocalActivityStore()) {
+				forcePresenceUpdate();
+				Logger.info(`${meta.name} v${meta.version} has started successfully.`);
+			} else {
+				UI.showToast(`${meta.name}: Failed to start. Please check the console for error details.`, {
+					type: "error",
+					timeout: 5000,
+				});
+			}
 		},
 
 		stop() {

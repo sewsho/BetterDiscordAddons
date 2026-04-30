@@ -3,7 +3,7 @@
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)
 
 Replaces the artist name with the song title on Spotify statuses, with an optional setting to show both.
 

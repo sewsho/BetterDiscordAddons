@@ -2,7 +2,7 @@
  * @name SpotifyTitleDisplay
  * @author Sewsho
  * @description Replaces the artist name with the song title on Spotify statuses, with an optional setting to show both.
- * @version 1.1.0
+ * @version 1.1.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/SpotifyTitleDisplay/SpotifyTitleDisplay.plugin.js
  */
 
@@ -13,6 +13,11 @@ module.exports = (meta) => {
 
 	const config = {
 		changelog: [
+			{
+				title: "Maintenance Update | v1.1.1",
+				type: "improved",
+				items: ["Improved startup error handling and notifications."],
+			},
 			{
 				title: "Artist Update | v1.1.0",
 				type: "added",
@@ -129,7 +134,13 @@ module.exports = (meta) => {
 		start() {
 			loadSettings();
 			showChangelog();
+
 			if (patchActivityTextModule()) Logger.info(`${meta.name} v${meta.version} has started successfully.`);
+			else
+				UI.showToast(`${meta.name}: Failed to start. Please check the console for error details.`, {
+					type: "error",
+					timeout: 5000,
+				});
 		},
 
 		stop() {

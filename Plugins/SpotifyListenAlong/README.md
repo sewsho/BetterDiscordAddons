@@ -3,7 +3,7 @@
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)
 
 Unlock Listen Along for Spotify in Discord without a Spotify Premium subscription.
 
