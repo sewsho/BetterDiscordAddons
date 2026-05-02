@@ -22,7 +22,7 @@ Replaces the artist name with the song title on Spotify statuses, with an option
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![SpotifyTitleDisplay Preview](https://i.imgur.com/VSJmeQ9.png)
+![SpotifyTitleDisplay Preview](https://i.imgur.com/3HKu4sc.png)
 
 </div>
 <!-- markdownlint-enable MD033 -->

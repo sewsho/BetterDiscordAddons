@@ -8,7 +8,7 @@ This repository contains custom BetterDiscord plugins designed to enhance your D
 
 | Plugin | Description | Links |
 | :--- | :--- | :---: |
-| **ActivityFilter** | Hide specific activities from your status so other users never see them. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/ActivityFilter/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/ActivityFilter/ActivityFilter.plugin.js) |
+| **ActivityFilter** | Hide or anonymize specific activities from your Discord status for ultimate privacy. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/ActivityFilter/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/ActivityFilter/ActivityFilter.plugin.js) |
 | **SpotifyListenAlong** | Unlock Listen Along for Spotify in Discord without a Spotify Premium subscription. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyListenAlong/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyListenAlong/SpotifyListenAlong.plugin.js) |
 | **SpotifyTitleDisplay** | Replaces the artist name with the song title on Spotify statuses, with an optional setting to show both. | [![Readme](https://img.shields.io/badge/README-333333?style=flat-square)](Plugins/SpotifyTitleDisplay/README.md)&nbsp;[![Source](https://img.shields.io/badge/SOURCE-007acc?style=flat-square)](Plugins/SpotifyTitleDisplay/SpotifyTitleDisplay.plugin.js) |
 

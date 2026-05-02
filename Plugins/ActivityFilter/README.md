@@ -27,7 +27,7 @@ Hide or anonymize specific activities from your Discord status for ultimate priv
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
-![ActivityFilter Preview](https://i.imgur.com/evSIxdb.png)
+![ActivityFilter Preview](https://i.imgur.com/vfyFJvf.png)
 
 </div>
 <!-- markdownlint-enable MD033 -->
