@@ -35,6 +35,7 @@ module.exports = (meta) => {
 				id: "settings",
 				name: "Settings",
 				collapsible: true,
+				shown: false,
 				settings: [
 					{
 						type: "switch",
