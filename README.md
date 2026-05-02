@@ -30,6 +30,6 @@ This repository contains custom BetterDiscord plugins designed to enhance your D
 - These plugins are provided **as-is** under the [MIT License](LICENSE).
 - Compatibility with future Discord updates is not guaranteed.
 
-## 🛠️ Issues & Requests
+## 🛠️ Support
 
-If you encounter any bugs or have feature requests, feel free to open an issue or reach out to me on Discord: **Sewsho**
+If you encounter any bugs, have feature requests, or need support, feel free to open an issue or reach out to me on Discord: **Sewsho**

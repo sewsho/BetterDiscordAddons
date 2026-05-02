@@ -40,4 +40,4 @@ Replaces the artist name with the song title on Spotify statuses, with an option
 
 ## Support
 
-If you have any questions or need support, feel free to reach out to me on Discord: **Sewsho**
+If you encounter any bugs, have feature requests, or need support, feel free to open an issue or reach out to me on Discord: **Sewsho**
