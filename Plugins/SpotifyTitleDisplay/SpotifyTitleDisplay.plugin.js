@@ -4,6 +4,8 @@
  * @description Replaces the artist name with the song title on Spotify statuses, with an optional setting to show both.
  * @version 1.1.1
  * @source https://github.com/sewsho/BetterDiscordAddons/blob/main/Plugins/SpotifyTitleDisplay/SpotifyTitleDisplay.plugin.js
+ * @donate https://ko-fi.com/sewsho
+ * @website https://github.com/sewsho/BetterDiscordAddons
  */
 
 module.exports = (meta) => {
