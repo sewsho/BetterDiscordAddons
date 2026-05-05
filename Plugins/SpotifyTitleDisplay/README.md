@@ -14,8 +14,8 @@ Replaces the artist name with the song title on Spotify statuses, with an option
 
 ## Features
 
-- **Prioritize Titles**: Always see the song title first in Spotify statuses across Discord.
-- **Customizable Display**: Choose whether to include the artist name after the song title in the plugin settings.
+- **Title Prioritization**: Shows the song title in the main status line where the artist normally appears.
+- **Combined Display Option**: Toggleable setting to show both the title and artist (e.g., "Song Title — Artist").
 
 ## Preview
 

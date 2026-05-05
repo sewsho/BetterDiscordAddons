@@ -14,13 +14,8 @@ Hide or anonymize specific activities from your Discord status for ultimate priv
 
 ## Features
 
-- **Anonymizer Mode**: Hide specific activity details while keeping a generic status active (e.g., "Playing a game").
-- **Seamless Filtering**: Stays active through restarts and updates without manual intervention.
-- **Auto-Discovery**: New games and apps are automatically detected and categorized for you.
-- **Instant Search**: Quickly filter your activity list by name using the built-in search bar in the settings panel.
-- **Clean Interface**: Filtered activities are hidden from your own view to match the native Discord experience.
-- **Smart Management**: Settings are automatically sorted by category and visibility for easy control.
-- **True Privacy**: All filtering happens locally before any status data is ever sent to Discord.
+- **Per-Activity Toggles**: Manually choose which specific games, songs, or streams are visible or hidden on an individual basis.
+- **Category-Specific Anonymizing**: Toggle generic status messages (e.g., "Playing a game") for entire activity categories while keeping your status active.
 
 ## Preview
 
@@ -41,7 +36,7 @@ Hide or anonymize specific activities from your Discord status for ultimate priv
 ## Usage
 
 1. **Open Settings**: Navigate to the BetterDiscord settings and find the ActivityFilter plugin.
-2. **Search & Select**: Use the search bar or expand categories to find specific activities. **Note**: Activities will only appear in these lists after they have been run or detected by Discord at least once.
+2. **Search & Select**: Use the search bar or expand categories to find specific activities. **Note**: Activities will only appear in these lists after they have been run at least once.
 3. **Anonymize**: Enable "Anonymize" toggles for specific categories (e.g., Playing, Listening) to show generic status messages instead of detailed titles.
 4. **Apply Changes**: Your preferences are saved automatically, and your status will update instantly.
 5. **Check Status**: Confirm your status row shows the activities exactly how you want them.

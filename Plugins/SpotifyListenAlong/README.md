@@ -14,7 +14,7 @@ Unlock Listen Along for Spotify in Discord without a Spotify Premium subscriptio
 
 ## Features
 
-- **Free Listen Along**: Spoofs premium status so Listen Along works without Spotify Premium.
+- **Listen Along Unlock**: Access the Spotify Listen Along feature without requiring a Premium subscription.
 
 ## Installation
 
