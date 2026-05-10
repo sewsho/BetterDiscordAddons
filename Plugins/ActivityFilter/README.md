@@ -14,7 +14,7 @@ Hide or anonymize specific activities from your Discord status for ultimate priv
 
 ## Features
 
-- **Per-Activity Toggles**: Manually choose which specific games, songs, or streams are visible or hidden on an individual basis.
+- **Per-Activity Toggles**: Manually choose which specific activities are visible or hidden on an individual basis.
 - **Category-Specific Anonymizing**: Toggle generic status messages (e.g., "Playing a game") for entire activity categories while keeping your status active.
 
 ## Preview
